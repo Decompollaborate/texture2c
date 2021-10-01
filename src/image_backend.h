@@ -12,7 +12,6 @@ typedef struct RGBAPixel {
 } RGBAPixel;
 
 void RGBAPixel_Init(RGBAPixel* pixel);
-void RGBAPixel_Destroy(RGBAPixel* pixel);
 
 void RGBAPixel_SetRGBA(RGBAPixel* pixel, uint8_t nR, uint8_t nG, uint8_t nB, uint8_t nA);
 void RGBAPixel_SetGrayscale(RGBAPixel* pixel, uint8_t grayscale, uint8_t alpha);

@@ -285,6 +285,8 @@ RGBAPixel ImageBackend_GetPixel(ImageBackend* image, size_t y, size_t x)
 	assert(!image->isColorIndexed);
 
 	RGBAPixel pixel;
+	RGBAPixel_Init(&pixel);
+
 	size_t bytePerPixel = ImageBackend_GetBytesPerPixel(image);
 	pixel.r = image->pixelMatrix[y][x * bytePerPixel + 0];
 	pixel.g = image->pixelMatrix[y][x * bytePerPixel + 1];
@@ -464,10 +466,6 @@ void RGBAPixel_Init(RGBAPixel* pixel) {
 	pixel->g = 0;
 	pixel->b = 0;
 	pixel->a = 0;
-}
-
-void RGBAPixel_Destroy(RGBAPixel* pixel) {
-    (void)pixel;
 }
 
 void RGBAPixel_SetRGBA(RGBAPixel* pixel, uint8_t nR, uint8_t nG, uint8_t nB, uint8_t nA) {

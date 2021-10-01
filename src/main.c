@@ -5,12 +5,22 @@
 #include <string.h>
 #include <unistd.h>
 
-int main(int argc, const char *argv[]) {
-  if (argc < 2) {
-    // TODO
-    printf("Usage: %s \n", argv[0]);
-    return EXIT_FAILURE;
-  }
+#include "png_texture.h"
 
-  return EXIT_SUCCESS;
+int main(int argc, const char *argv[]) {
+    if (argc < 2) {
+        // TODO
+        printf("Usage: %s pngfile \n", argv[0]);
+        return EXIT_FAILURE;
+    }
+
+    PngTexture pngTex;
+    PngTexture_Init(&pngTex);
+
+    PngTexture_ReadPng(&pngTex, argv[1], TextureType_rgba16);
+
+
+    PngTexture_Destroy(&pngTex);
+
+    return EXIT_SUCCESS;
 }
