@@ -1,4 +1,4 @@
-#include "ImageBackend.h"
+#include "image_backend.h"
 
 #include <assert.h>
 #include <png.h>
