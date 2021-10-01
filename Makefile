@@ -7,7 +7,7 @@ ELF         := texture2c.elf
 CC          := clang
 IINC        := -I src
 WARNINGS    := -Wall -Wextra -Wshadow -Werror=implicit-function-declaration
-CFLAGS      := 
+CFLAGS      := -std=c11
 LDFLAGS     := -lpng
 
 ifeq ($(DEBUG),0)
@@ -16,6 +16,7 @@ ifeq ($(DEBUG),0)
 else
   OPTFLAGS  := -O0 -g3
 endif
+# CFLAGS      += -DTEXTURE_DEBUG
 
 ifneq ($(ASAN),0)
   CFLAGS    += -fsanitize=address
