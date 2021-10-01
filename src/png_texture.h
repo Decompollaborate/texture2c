@@ -24,10 +24,12 @@ typedef struct PngTexture {
 	TextureType format;
 	ImageBackend textureData;
     uint8_t* textureBuffer;
+    bool hasData;
 } PngTexture;
 
 void PngTexture_Init(PngTexture* texture);
 void PngTexture_Destroy(PngTexture* texture);
 
 void PngTexture_ReadPng(PngTexture* texture, const char* pngPath, TextureType texType);
+void PngTexture_WriteRaw(PngTexture* texture, const char* outPath);
 

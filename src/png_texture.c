@@ -1,11 +1,15 @@
 #include "png_texture.h"
 
 #include <assert.h>
+#include <stdio.h>
+
+#include"bit_convert.h"
 
 void PngTexture_Init(PngTexture* texture) {
     texture->format = TextureType_Max;
     ImageBackend_Init(&texture->textureData);
     texture->textureBuffer = NULL;
+    texture->hasData = false;
 }
 
 void PngTexture_Destroy(PngTexture* texture) {
@@ -211,6 +215,7 @@ ReadPngCallbacks readPngArray [TextureType_Max] = {
 
 
 void PngTexture_ReadPng(PngTexture* texture, const char* pngPath, TextureType texType) {
+    assert(!texture->hasData);
     texture->format = texType;
 
     assert(texType >= 0 && texType < TextureType_Max);
@@ -223,4 +228,33 @@ void PngTexture_ReadPng(PngTexture* texture, const char* pngPath, TextureType te
 
     readPngArray[texType](texture);
 
+    texture->hasData = true;
+}
+
+
+
+void PngTexture_Write64(PngTexture* texture, FILE* outFile) {
+	size_t width = texture->textureData.width;
+	size_t height = texture->textureData.height;
+
+    size_t bufferSize = width * height * ImageBackend_GetBytesPerPixel(&texture->textureData);
+
+    for (size_t i = 0; i < bufferSize; i+=8) {
+        fprintf(outFile, "0x%016lX, ", ToUInt64BE(texture->textureBuffer, i));
+        if (i % 32 == 24) {
+            fprintf(outFile, "\n");
+        }
+    }
+}
+
+
+
+void PngTexture_WriteRaw(PngTexture* texture, const char* outPath) {
+    assert(texture->hasData);
+
+    FILE* outFile = fopen(outPath, "w");
+
+    PngTexture_Write64(texture, outFile);
+
+    fclose(outFile);
 }
