@@ -25,17 +25,10 @@ void ImageBackend_Destroy(ImageBackend* image) {
     ImageBackend_FreeImageData(image);
 }
 
-void ImageBackend_ReadPng(ImageBackend* image, const char* filename) {
+void ImageBackend_ReadPng(ImageBackend* image, FILE* inFile) {
+    assert(image != NULL);
+    assert(inFile != NULL);
     ImageBackend_FreeImageData(image);
-
-    FILE* fp = fopen(filename, "rb");
-    if (fp == NULL) {
-        // throw std::runtime_error(StringHelper::Sprintf(
-        //	"ImageBackend::ReadPng: Error.\n\t Couldn't open file '%s'.",
-        // filename));
-        // TODO
-        assert(!"Couldn't open file");
-    }
 
     png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     if (png == NULL) {
@@ -60,7 +53,7 @@ void ImageBackend_ReadPng(ImageBackend* image, const char* filename) {
         assert(!"setjmp(png_jmpbuf(png))");
     }
 
-    png_init_io(png, fp);
+    png_init_io(png, inFile);
 
     png_read_info(png, info);
 
@@ -148,24 +141,15 @@ void ImageBackend_ReadPng(ImageBackend* image, const char* filename) {
     printf("\n");
 #endif
 
-    fclose(fp);
-
     png_destroy_read_struct(&png, &info, NULL);
 
     image->hasImageData = true;
 }
 
-void ImageBackend_WritePng(ImageBackend* image, const char* filename) {
+void ImageBackend_WritePng(ImageBackend* image, FILE* outFile) {
+    assert(image != NULL);
+    assert(outFile != NULL);
     assert(image->hasImageData);
-
-    FILE* fp = fopen(filename, "wb");
-    if (!fp) {
-        // throw std::runtime_error(StringHelper::Sprintf(
-        //	"ImageBackend::WritePng: Error.\n\t Couldn't open file '%s' in write
-        // mode.", filename));
-        // TODO
-        assert(!"Couldn't open file");
-    }
 
     png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     if (!png) {
@@ -190,7 +174,7 @@ void ImageBackend_WritePng(ImageBackend* image, const char* filename) {
         assert(!"setjmp(png_jmpbuf(png))");
     }
 
-    png_init_io(png, fp);
+    png_init_io(png, outFile);
 
     png_set_IHDR(png, info, image->width, image->height,
                  image->bitDepth,  // 8,
@@ -234,8 +218,6 @@ void ImageBackend_WritePng(ImageBackend* image, const char* filename) {
 
     png_write_image(png, image->pixelMatrix);
     png_write_end(png, NULL);
-
-    fclose(fp);
 
     png_destroy_write_struct(&png, &info);
 }
@@ -283,7 +265,7 @@ void ImageBackend_InitEmptyPaletteImage(ImageBackend* image, uint32_t nWidth, ui
     image->isColorIndexed = true;
 }
 
-RGBAPixel ImageBackend_GetPixel(ImageBackend* image, size_t y, size_t x) {
+RGBAPixel ImageBackend_GetPixel(const ImageBackend* image, size_t y, size_t x) {
     assert(y < image->height);
     assert(x < image->width);
     assert(!image->isColorIndexed);
@@ -301,7 +283,7 @@ RGBAPixel ImageBackend_GetPixel(ImageBackend* image, size_t y, size_t x) {
     return pixel;
 }
 
-uint8_t ImageBackend_GetIndexedPixel(ImageBackend* image, size_t y, size_t x) {
+uint8_t ImageBackend_GetIndexedPixel(const ImageBackend* image, size_t y, size_t x) {
     assert(y < image->height);
     assert(x < image->width);
     assert(image->isColorIndexed);

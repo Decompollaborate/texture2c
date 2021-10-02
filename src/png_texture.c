@@ -7,32 +7,14 @@
 #include "bit_convert.h"
 #include "yaz0/yaz0.h"
 
-#define ARRAY_COUNT(arr) (sizeof(arr) / sizeof(arr[0]))
-
-void PngTexture_Init(PngTexture* texture) {
-    texture->format = TextureType_Max;
-    ImageBackend_Init(&texture->textureData);
-    texture->textureBuffer = NULL;
-    texture->bufferLength = 0;
-    texture->hasData = false;
-    texture->isCompressed = false;
-}
-
-void PngTexture_Destroy(PngTexture* texture) {
-    ImageBackend_Destroy(&texture->textureData);
-    if (texture->textureBuffer != NULL) {
-        free(texture->textureBuffer);
-    }
-}
-
-void PngTexture_ReadRgba16(PngTexture* texture) {
-    size_t width = texture->textureData.width;
-    size_t height = texture->textureData.height;
+void PngTexture_CopyRgba16(GenericBuffer *dst, const ImageBackend *textureData) {
+    size_t width = textureData->width;
+    size_t height = textureData->height;
 
     for (uint16_t y = 0; y < height; y++) {
         for (uint16_t x = 0; x < width; x++) {
             size_t pos = ((y * width) + x) * 2;
-            RGBAPixel pixel = ImageBackend_GetPixel(&texture->textureData, y, x);
+            RGBAPixel pixel = ImageBackend_GetPixel(textureData, y, x);
 
             uint8_t r = pixel.r / 8;
             uint8_t g = pixel.g / 8;
@@ -42,60 +24,60 @@ void PngTexture_ReadRgba16(PngTexture* texture) {
 
             uint16_t data = (r << 11) + (g << 6) + (b << 1) + alphaBit;
 
-            texture->textureBuffer[pos + 0] = (data & 0xFF00) >> 8;
-            texture->textureBuffer[pos + 1] = (data & 0x00FF);
+            dst->textureBuffer[pos + 0] = (data & 0xFF00) >> 8;
+            dst->textureBuffer[pos + 1] = (data & 0x00FF);
         }
     }
 }
 
-void PngTexture_ReadRgba32(PngTexture* texture) {
-    size_t width = texture->textureData.width;
-    size_t height = texture->textureData.height;
+void PngTexture_CopyRgba32(GenericBuffer *dst, const ImageBackend *textureData) {
+    size_t width = textureData->width;
+    size_t height = textureData->height;
 
     for (uint16_t y = 0; y < height; y++) {
         for (uint16_t x = 0; x < width; x++) {
             size_t pos = ((y * width) + x) * 4;
-            RGBAPixel pixel = ImageBackend_GetPixel(&texture->textureData, y, x);
+            RGBAPixel pixel = ImageBackend_GetPixel(textureData, y, x);
 
-            texture->textureBuffer[pos + 0] = pixel.r;
-            texture->textureBuffer[pos + 1] = pixel.g;
-            texture->textureBuffer[pos + 2] = pixel.b;
-            texture->textureBuffer[pos + 3] = pixel.a;
+            dst->textureBuffer[pos + 0] = pixel.r;
+            dst->textureBuffer[pos + 1] = pixel.g;
+            dst->textureBuffer[pos + 2] = pixel.b;
+            dst->textureBuffer[pos + 3] = pixel.a;
         }
     }
 }
 
-void PngTexture_ReadI4(PngTexture* texture) {
-    size_t width = texture->textureData.width;
-    size_t height = texture->textureData.height;
+void PngTexture_CopyI4(GenericBuffer *dst, const ImageBackend *textureData) {
+    size_t width = textureData->width;
+    size_t height = textureData->height;
 
     for (uint16_t y = 0; y < height; y++) {
         for (uint16_t x = 0; x < width; x += 2) {
             size_t pos = ((y * width) + x) / 2;
-            uint8_t r1 = ImageBackend_GetPixel(&texture->textureData, y, x).r;
-            uint8_t r2 = ImageBackend_GetPixel(&texture->textureData, y, x + 1).r;
+            uint8_t r1 = ImageBackend_GetPixel(textureData, y, x).r;
+            uint8_t r2 = ImageBackend_GetPixel(textureData, y, x + 1).r;
 
-            texture->textureBuffer[pos] = (uint8_t)(((r1 / 16) << 4) + (r2 / 16));
+            dst->textureBuffer[pos] = (uint8_t)(((r1 / 16) << 4) + (r2 / 16));
         }
     }
 }
 
-void PngTexture_ReadI8(PngTexture* texture) {
-    size_t width = texture->textureData.width;
-    size_t height = texture->textureData.height;
+void PngTexture_CopyI8(GenericBuffer *dst, const ImageBackend *textureData) {
+    size_t width = textureData->width;
+    size_t height = textureData->height;
 
     for (uint16_t y = 0; y < height; y++) {
         for (uint16_t x = 0; x < width; x++) {
             size_t pos = (y * width) + x;
-            RGBAPixel pixel = ImageBackend_GetPixel(&texture->textureData, y, x);
-            texture->textureBuffer[pos] = pixel.r;
+            RGBAPixel pixel = ImageBackend_GetPixel(textureData, y, x);
+            dst->textureBuffer[pos] = pixel.r;
         }
     }
 }
 
-void PngTexture_ReadIA4(PngTexture* texture) {
-    size_t width = texture->textureData.width;
-    size_t height = texture->textureData.height;
+void PngTexture_CopyIA4(GenericBuffer *dst, const ImageBackend *textureData) {
+    size_t width = textureData->width;
+    size_t height = textureData->height;
 
     for (uint16_t y = 0; y < height; y++) {
         for (uint16_t x = 0; x < width; x += 2) {
@@ -103,7 +85,7 @@ void PngTexture_ReadIA4(PngTexture* texture) {
             uint8_t data = 0;
 
             for (uint16_t i = 0; i < 2; i++) {
-                RGBAPixel pixel = ImageBackend_GetPixel(&texture->textureData, y, x + i);
+                RGBAPixel pixel = ImageBackend_GetPixel(textureData, y, x + i);
                 uint8_t cR = pixel.r;
                 uint8_t alphaBit = pixel.a != 0;
 
@@ -113,195 +95,99 @@ void PngTexture_ReadIA4(PngTexture* texture) {
                     data |= ((cR / 32) << 1) + alphaBit;
             }
 
-            texture->textureBuffer[pos] = data;
+            dst->textureBuffer[pos] = data;
         }
     }
 }
 
-void PngTexture_ReadIA8(PngTexture* texture) {
-    size_t width = texture->textureData.width;
-    size_t height = texture->textureData.height;
+void PngTexture_CopyIA8(GenericBuffer *dst, const ImageBackend *textureData) {
+    size_t width = textureData->width;
+    size_t height = textureData->height;
 
     for (uint16_t y = 0; y < height; y++) {
         for (uint16_t x = 0; x < width; x++) {
             size_t pos = ((y * width) + x) * 1;
-            RGBAPixel pixel = ImageBackend_GetPixel(&texture->textureData, y, x);
+            RGBAPixel pixel = ImageBackend_GetPixel(textureData, y, x);
 
             uint8_t r = pixel.r;
             uint8_t a = pixel.a;
 
-            texture->textureBuffer[pos] = ((r / 16) << 4) + (a / 16);
+            dst->textureBuffer[pos] = ((r / 16) << 4) + (a / 16);
         }
     }
 }
 
-void PngTexture_ReadIA16(PngTexture* texture) {
-    size_t width = texture->textureData.width;
-    size_t height = texture->textureData.height;
+void PngTexture_CopyIA16(GenericBuffer *dst, const ImageBackend *textureData) {
+    size_t width = textureData->width;
+    size_t height = textureData->height;
 
     for (uint16_t y = 0; y < height; y++) {
         for (uint16_t x = 0; x < width; x++) {
             size_t pos = ((y * width) + x) * 2;
-            RGBAPixel pixel = ImageBackend_GetPixel(&texture->textureData, y, x);
+            RGBAPixel pixel = ImageBackend_GetPixel(textureData, y, x);
 
             uint8_t cR = pixel.r;
             uint8_t aR = pixel.a;
 
-            texture->textureBuffer[pos + 0] = cR;
-            texture->textureBuffer[pos + 1] = aR;
+            dst->textureBuffer[pos + 0] = cR;
+            dst->textureBuffer[pos + 1] = aR;
         }
     }
 }
 
-void PngTexture_ReadCI4(PngTexture* texture) {
-    size_t width = texture->textureData.width;
-    size_t height = texture->textureData.height;
+void PngTexture_CopyCI4(GenericBuffer *dst, const ImageBackend *textureData) {
+    size_t width = textureData->width;
+    size_t height = textureData->height;
 
     for (uint16_t y = 0; y < height; y++) {
         for (uint16_t x = 0; x < width; x += 2) {
             size_t pos = ((y * width) + x) / 2;
 
-            uint8_t cR1 = ImageBackend_GetIndexedPixel(&texture->textureData, y, x);
-            uint8_t cR2 = ImageBackend_GetIndexedPixel(&texture->textureData, y, x + 1);
+            uint8_t cR1 = ImageBackend_GetIndexedPixel(textureData, y, x);
+            uint8_t cR2 = ImageBackend_GetIndexedPixel(textureData, y, x + 1);
 
-            texture->textureBuffer[pos] = (cR1 << 4) | (cR2);
+            dst->textureBuffer[pos] = (cR1 << 4) | (cR2);
         }
     }
 }
 
-void PngTexture_ReadCI8(PngTexture* texture) {
-    size_t width = texture->textureData.width;
-    size_t height = texture->textureData.height;
+void PngTexture_CopyCI8(GenericBuffer *dst, const ImageBackend *textureData) {
+    size_t width = textureData->width;
+    size_t height = textureData->height;
 
     for (uint16_t y = 0; y < height; y++) {
         for (uint16_t x = 0; x < width; x++) {
             size_t pos = ((y * width) + x);
-            uint8_t cR = ImageBackend_GetIndexedPixel(&texture->textureData, y, x);
+            uint8_t cR = ImageBackend_GetIndexedPixel(textureData, y, x);
 
-            texture->textureBuffer[pos] = cR;
+            dst->textureBuffer[pos] = cR;
         }
     }
 }
 
-typedef void (*ReadPngCallbacks)(PngTexture* texture);
+typedef void (*CopyPngCallbacks)(GenericBuffer *dst, const ImageBackend *textureData);
 
-ReadPngCallbacks readPngArray[TextureType_Max] = {
-    [TextureType_rgba16] = PngTexture_ReadRgba16, [TextureType_rgba32] = PngTexture_ReadRgba32,
-    [TextureType_i4] = PngTexture_ReadI4,         [TextureType_i8] = PngTexture_ReadI8,
-    [TextureType_ia4] = PngTexture_ReadIA4,       [TextureType_ia8] = PngTexture_ReadIA8,
-    [TextureType_ia16] = PngTexture_ReadIA16,     [TextureType_ci4] = PngTexture_ReadCI4,
-    [TextureType_ci8] = PngTexture_ReadCI8,
+CopyPngCallbacks readPngArray[TextureType_Max] = {
+    [TextureType_rgba16] = PngTexture_CopyRgba16, [TextureType_rgba32] = PngTexture_CopyRgba32,
+    [TextureType_i4] = PngTexture_CopyI4,         [TextureType_i8] = PngTexture_CopyI8,
+    [TextureType_ia4] = PngTexture_CopyIA4,       [TextureType_ia8] = PngTexture_CopyIA8,
+    [TextureType_ia16] = PngTexture_CopyIA16,     [TextureType_ci4] = PngTexture_CopyCI4,
+    [TextureType_ci8] = PngTexture_CopyCI8,
 };
 
-void PngTexture_ReadPng(PngTexture* texture, const char* pngPath, TextureType texType) {
-    assert(!texture->hasData);
-    texture->format = texType;
 
+void PngTexture_CopyPng(GenericBuffer *dst, const ImageBackend *textureData, TextureType texType) {
+    assert(dst != NULL);
+    assert(textureData != NULL);
     assert(texType >= 0 && texType < TextureType_Max);
+    // TODO?
+    assert(!dst->hasData);
 
-    ImageBackend_ReadPng(&texture->textureData, pngPath);
+    dst->bufferLength = textureData->width * textureData->height;
+    dst->bufferLength *= ImageBackend_GetBytesPerPixel(textureData);
+    dst->textureBuffer = malloc(dst->bufferLength);
 
-    texture->bufferLength = texture->textureData.width * texture->textureData.height;
-    texture->bufferLength *= ImageBackend_GetBytesPerPixel(&texture->textureData);
-    texture->textureBuffer = malloc(texture->bufferLength);
+    readPngArray[texType](dst, textureData);
 
-    readPngArray[texType](texture);
-
-    texture->hasData = true;
-}
-
-void PngTexture_WriteRaw(PngTexture* texture, const char* outPath) {
-    assert(texture->hasData);
-    assert(texture->format >= 0 && texture->format < TextureType_Max);
-
-    FILE* outFile = fopen(outPath, "w");
-
-    size_t step = 8;
-    if (!true) {
-        switch (texture->format) {
-            case TextureType_rgba32:
-                step = 4;
-                break;
-
-            case TextureType_rgba16:
-            case TextureType_ia16:
-                step = 2;
-                break;
-
-            case TextureType_i4:
-            case TextureType_i8:
-            case TextureType_ia4:
-            case TextureType_ia8:
-            case TextureType_ci4:
-            case TextureType_ci8:
-                step = 1;
-                break;
-
-            default:
-                break;
-        }
-    }
-
-    for (size_t i = 0; i < texture->bufferLength; i += step) {
-        if (true) {
-            fprintf(outFile, "0x%016lX, ", ToUInt64BE(texture->textureBuffer, i));
-        } else {
-            switch (texture->format) {
-                case TextureType_rgba32:
-                    fprintf(outFile, "0x%08X, ", ToUInt32BE(texture->textureBuffer, i));
-                    break;
-
-                case TextureType_rgba16:
-                case TextureType_ia16:
-                    fprintf(outFile, "0x%04X, ", ToUInt16BE(texture->textureBuffer, i));
-                    break;
-
-                case TextureType_i4:
-                case TextureType_i8:
-                case TextureType_ia4:
-                case TextureType_ia8:
-                case TextureType_ci4:
-                case TextureType_ci8:
-                    fprintf(outFile, "0x%02X, ", ToUInt8BE(texture->textureBuffer, i));
-                    break;
-
-                default:
-                    break;
-            }
-        }
-
-        if ((i / step + 1) % 4 == 0) {
-            fprintf(outFile, "\n");
-        }
-    }
-
-    fclose(outFile);
-}
-
-void PngTexture_Yaz0Compress(PngTexture* texture) {
-    assert(texture->hasData);
-    assert(!texture->isCompressed);
-
-    size_t uncompressedSize = texture->bufferLength;
-
-    uint8_t* tempBuffer = malloc(uncompressedSize * sizeof(uint8_t) * 2);
-
-    // compress data
-    size_t compSize = yaz0_encode(texture->textureBuffer, tempBuffer, uncompressedSize);
-
-    // make Yaz0 header
-    uint8_t header[16] = { 0 };
-    header[0] = 'Y';
-    header[1] = 'a';
-    header[2] = 'z';
-    header[3] = '0';
-    FromUInt32ToBE(header, 4, uncompressedSize);
-
-    memcpy(texture->textureBuffer, header, ARRAY_COUNT(header));
-    memcpy(texture->textureBuffer + ARRAY_COUNT(header), tempBuffer, compSize);
-
-    texture->bufferLength = ARRAY_COUNT(header) + compSize;
-    texture->isCompressed = true;
-
-    free(tempBuffer);
+    dst->hasData = true;
 }

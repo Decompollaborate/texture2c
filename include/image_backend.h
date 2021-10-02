@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 typedef struct RGBAPixel {
     uint8_t r;
@@ -37,14 +38,14 @@ typedef struct ImageBackend {
 void ImageBackend_Init(ImageBackend* image);
 void ImageBackend_Destroy(ImageBackend* image);
 
-void ImageBackend_ReadPng(ImageBackend* image, const char* filename);
-void ImageBackend_WritePng(ImageBackend* image, const char* filename);
+void ImageBackend_ReadPng(ImageBackend* image, FILE* inFile);
+void ImageBackend_WritePng(ImageBackend* image, FILE* outFile);
 
 void ImageBackend_InitEmptyRGBImage(ImageBackend* image, uint32_t nWidth, uint32_t nHeight, bool alpha);
 void ImageBackend_InitEmptyPaletteImage(ImageBackend* image, uint32_t nWidth, uint32_t nHeight);
 
-RGBAPixel ImageBackend_GetPixel(ImageBackend* image, size_t y, size_t x);
-uint8_t ImageBackend_GetIndexedPixel(ImageBackend* image, size_t y, size_t x);
+RGBAPixel ImageBackend_GetPixel(const ImageBackend* image, size_t y, size_t x);
+uint8_t ImageBackend_GetIndexedPixel(const ImageBackend* image, size_t y, size_t x);
 
 void ImageBackend_SetRGBPixel(ImageBackend* image, size_t y, size_t x, uint8_t nR, uint8_t nG, uint8_t nB, uint8_t nA);
 void ImageBackend_SetGrayscalePixel(ImageBackend* image, size_t y, size_t x, uint8_t grayscale, uint8_t alpha);

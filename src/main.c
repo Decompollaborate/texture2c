@@ -9,7 +9,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
 #include "png_texture.h"
+#include "generic_buffer.h"
+#include "image_backend.h"
 
 /* Defines */
 #define OPTSRT ""
@@ -35,6 +38,20 @@
  *   input-file             input file path
  */
 
+
+void ReadPng(GenericBuffer* buf, const char* inPath, TextureType texType) {
+    ImageBackend textureData;
+    ImageBackend_Init(&textureData);
+
+    FILE *inFile = fopen(inPath, "rb");
+    ImageBackend_ReadPng(&textureData, inFile);
+    fclose(inFile);
+
+    PngTexture_CopyPng(buf, &textureData, texType);
+
+    ImageBackend_Destroy(&textureData);
+}
+
 #define COMPRESS_TEST
 
 int main(int argc, const char* argv[]) {
@@ -44,16 +61,19 @@ int main(int argc, const char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    PngTexture pngTex;
-    PngTexture_Init(&pngTex);
+    GenericBuffer genericBuf;
+    GenericBuffer_Init(&genericBuf);
 
-    PngTexture_ReadPng(&pngTex, argv[1], TextureType_rgba16);
+    ReadPng(&genericBuf, argv[1], TextureType_rgba16);
+
 #ifdef COMPRESS_TEST
-    PngTexture_Yaz0Compress(&pngTex);
+    GenericBuffer_Yaz0Compress(&genericBuf);
 #endif
-    PngTexture_WriteRaw(&pngTex, argv[2]);
+    FILE *outFile = fopen(argv[2], "w");
+    GenericBuffer_WriteRaw(&genericBuf, TypeBitWidth_64, outFile);
+    fclose(outFile);
 
-    PngTexture_Destroy(&pngTex);
+    GenericBuffer_Destroy(&genericBuf);
 
     return EXIT_SUCCESS;
 }
