@@ -34,6 +34,8 @@
  *   input-file             input file path
  */
 
+#define COMPRESS_TEST
+
 int main(int argc, const char* argv[]) {
     if (argc < 3) {
         // TODO
@@ -45,6 +47,9 @@ int main(int argc, const char* argv[]) {
     PngTexture_Init(&pngTex);
 
     PngTexture_ReadPng(&pngTex, argv[1], TextureType_rgba16);
+#ifdef COMPRESS_TEST
+    PngTexture_Yaz0Compress(&pngTex);
+#endif
     PngTexture_WriteRaw(&pngTex, argv[2]);
 
     PngTexture_Destroy(&pngTex);

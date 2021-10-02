@@ -2,14 +2,20 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "bit_convert.h"
+#include "yaz0/yaz0.h"
+
+#define ARRAY_COUNT(arr) (sizeof(arr) / sizeof(arr[0]))
 
 void PngTexture_Init(PngTexture* texture) {
     texture->format = TextureType_Max;
     ImageBackend_Init(&texture->textureData);
     texture->textureBuffer = NULL;
+    texture->bufferLength = 0;
     texture->hasData = false;
+    texture->isCompressed = false;
 }
 
 void PngTexture_Destroy(PngTexture* texture) {
@@ -195,9 +201,9 @@ void PngTexture_ReadPng(PngTexture* texture, const char* pngPath, TextureType te
 
     ImageBackend_ReadPng(&texture->textureData, pngPath);
 
-    size_t bufferSize = texture->textureData.width * texture->textureData.height;
-    bufferSize *= ImageBackend_GetBytesPerPixel(&texture->textureData);
-    texture->textureBuffer = malloc(bufferSize);
+    texture->bufferLength = texture->textureData.width * texture->textureData.height;
+    texture->bufferLength *= ImageBackend_GetBytesPerPixel(&texture->textureData);
+    texture->textureBuffer = malloc(texture->bufferLength);
 
     readPngArray[texType](texture);
 
@@ -209,10 +215,6 @@ void PngTexture_WriteRaw(PngTexture* texture, const char* outPath) {
     assert(texture->format >= 0 && texture->format < TextureType_Max);
 
     FILE* outFile = fopen(outPath, "w");
-
-    size_t width = texture->textureData.width;
-    size_t height = texture->textureData.height;
-    size_t bufferSize = width * height * ImageBackend_GetBytesPerPixel(&texture->textureData);
 
     size_t step = 8;
     if (!true) {
@@ -240,7 +242,7 @@ void PngTexture_WriteRaw(PngTexture* texture, const char* outPath) {
         }
     }
 
-    for (size_t i = 0; i < bufferSize; i += step) {
+    for (size_t i = 0; i < texture->bufferLength; i += step) {
         if (true) {
             fprintf(outFile, "0x%016lX, ", ToUInt64BE(texture->textureBuffer, i));
         } else {
@@ -274,4 +276,32 @@ void PngTexture_WriteRaw(PngTexture* texture, const char* outPath) {
     }
 
     fclose(outFile);
+}
+
+void PngTexture_Yaz0Compress(PngTexture* texture) {
+    assert(texture->hasData);
+    assert(!texture->isCompressed);
+
+    size_t uncompressedSize = texture->bufferLength;
+
+    uint8_t *tempBuffer = malloc(uncompressedSize * sizeof(uint8_t) * 2);
+
+    // compress data
+    size_t compSize = yaz0_encode(texture->textureBuffer, tempBuffer, uncompressedSize);
+
+    // make Yaz0 header
+    uint8_t header[16] = {0};
+    header[0] = 'Y';
+    header[1] = 'a';
+    header[2] = 'z';
+    header[3] = '0';
+    FromUInt32ToBE(header, 4, uncompressedSize);
+
+    memcpy(texture->textureBuffer, header, ARRAY_COUNT(header));
+    memcpy(texture->textureBuffer+ARRAY_COUNT(header), tempBuffer, compSize);
+
+    texture->bufferLength = ARRAY_COUNT(header) + compSize;
+    texture->isCompressed = true;
+
+    free(tempBuffer);
 }

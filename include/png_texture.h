@@ -23,7 +23,9 @@ typedef struct PngTexture {
     TextureType format;
     ImageBackend textureData;
     uint8_t* textureBuffer;
+    size_t bufferLength;
     bool hasData;
+    bool isCompressed;
 } PngTexture;
 
 void PngTexture_Init(PngTexture* texture);
@@ -31,3 +33,5 @@ void PngTexture_Destroy(PngTexture* texture);
 
 void PngTexture_ReadPng(PngTexture* texture, const char* pngPath, TextureType texType);
 void PngTexture_WriteRaw(PngTexture* texture, const char* outPath);
+
+void PngTexture_Yaz0Compress(PngTexture* texture);

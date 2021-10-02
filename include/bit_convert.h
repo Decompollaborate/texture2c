@@ -15,3 +15,6 @@ uint32_t ToUInt32BE(const uint8_t* data, int32_t offset);
 
 int64_t ToInt64BE(const uint8_t* data, int32_t offset);
 uint64_t ToUInt64BE(const uint8_t* data, int32_t offset);
+
+
+void FromUInt32ToBE(uint8_t* data, int32_t offset, uint32_t value);
