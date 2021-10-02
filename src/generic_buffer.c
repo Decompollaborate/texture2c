@@ -9,15 +9,16 @@
 
 
 void GenericBuffer_Init(GenericBuffer* buffer) {
-    buffer->textureBuffer = NULL;
+    buffer->buffer = NULL;
+    buffer->bufferSize = 0;
     buffer->bufferLength = 0;
     buffer->hasData = false;
     buffer->isCompressed = false;
 }
 
 void GenericBuffer_Destroy(GenericBuffer* buffer) {
-    if (buffer->textureBuffer != NULL) {
-        free(buffer->textureBuffer);
+    if (buffer->buffer != NULL) {
+        free(buffer->buffer);
     }
 }
 
@@ -50,19 +51,19 @@ void GenericBuffer_WriteRaw(GenericBuffer* buffer, TypeBitWidth bitWidth, FILE* 
     for (size_t i = 0; i < buffer->bufferLength; i += step) {
         switch (bitWidth) {
             case TypeBitWidth_64:
-                fprintf(outFile, "0x%016lX, ", ToUInt64BE(buffer->textureBuffer, i));
+                fprintf(outFile, "0x%016lX, ", ToUInt64BE(buffer->buffer, i));
                 break;
 
             case TypeBitWidth_32:
-                fprintf(outFile, "0x%08X, ", ToUInt32BE(buffer->textureBuffer, i));
+                fprintf(outFile, "0x%08X, ", ToUInt32BE(buffer->buffer, i));
                 break;
 
             case TypeBitWidth_16:
-                fprintf(outFile, "0x%04X, ", ToUInt16BE(buffer->textureBuffer, i));
+                fprintf(outFile, "0x%04X, ", ToUInt16BE(buffer->buffer, i));
                 break;
 
             case TypeBitWidth_8:
-                fprintf(outFile, "0x%02X, ", ToUInt8BE(buffer->textureBuffer, i));
+                fprintf(outFile, "0x%02X, ", ToUInt8BE(buffer->buffer, i));
                 break;
 
             default:
@@ -84,7 +85,7 @@ void GenericBuffer_Yaz0Compress(GenericBuffer* buffer) {
     uint8_t* tempBuffer = malloc(uncompressedSize * sizeof(uint8_t) * 2);
 
     // compress data
-    size_t compSize = yaz0_encode(buffer->textureBuffer, tempBuffer, uncompressedSize);
+    size_t compSize = yaz0_encode(buffer->buffer, tempBuffer, uncompressedSize);
 
     // make Yaz0 header
     uint8_t header[16] = { 0 };
@@ -94,8 +95,8 @@ void GenericBuffer_Yaz0Compress(GenericBuffer* buffer) {
     header[3] = '0';
     FromUInt32ToBE(header, 4, uncompressedSize);
 
-    memcpy(buffer->textureBuffer, header, ARRAY_COUNT(header));
-    memcpy(buffer->textureBuffer + ARRAY_COUNT(header), tempBuffer, compSize);
+    memcpy(buffer->buffer, header, ARRAY_COUNT(header));
+    memcpy(buffer->buffer + ARRAY_COUNT(header), tempBuffer, compSize);
 
     buffer->bufferLength = ARRAY_COUNT(header) + compSize;
     buffer->isCompressed = true;

@@ -14,7 +14,8 @@ typedef enum TypeBitWidth {
 } TypeBitWidth;
 
 typedef struct GenericBuffer {
-    uint8_t* textureBuffer;
+    uint8_t* buffer;
+    size_t bufferSize;
     size_t bufferLength;
     bool hasData;
     bool isCompressed;

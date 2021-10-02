@@ -24,8 +24,8 @@ void PngTexture_CopyRgba16(GenericBuffer *dst, const ImageBackend *textureData) 
 
             uint16_t data = (r << 11) + (g << 6) + (b << 1) + alphaBit;
 
-            dst->textureBuffer[pos + 0] = (data & 0xFF00) >> 8;
-            dst->textureBuffer[pos + 1] = (data & 0x00FF);
+            dst->buffer[pos + 0] = (data & 0xFF00) >> 8;
+            dst->buffer[pos + 1] = (data & 0x00FF);
         }
     }
 }
@@ -39,10 +39,10 @@ void PngTexture_CopyRgba32(GenericBuffer *dst, const ImageBackend *textureData) 
             size_t pos = ((y * width) + x) * 4;
             RGBAPixel pixel = ImageBackend_GetPixel(textureData, y, x);
 
-            dst->textureBuffer[pos + 0] = pixel.r;
-            dst->textureBuffer[pos + 1] = pixel.g;
-            dst->textureBuffer[pos + 2] = pixel.b;
-            dst->textureBuffer[pos + 3] = pixel.a;
+            dst->buffer[pos + 0] = pixel.r;
+            dst->buffer[pos + 1] = pixel.g;
+            dst->buffer[pos + 2] = pixel.b;
+            dst->buffer[pos + 3] = pixel.a;
         }
     }
 }
@@ -57,7 +57,7 @@ void PngTexture_CopyI4(GenericBuffer *dst, const ImageBackend *textureData) {
             uint8_t r1 = ImageBackend_GetPixel(textureData, y, x).r;
             uint8_t r2 = ImageBackend_GetPixel(textureData, y, x + 1).r;
 
-            dst->textureBuffer[pos] = (uint8_t)(((r1 / 16) << 4) + (r2 / 16));
+            dst->buffer[pos] = (uint8_t)(((r1 / 16) << 4) + (r2 / 16));
         }
     }
 }
@@ -70,7 +70,7 @@ void PngTexture_CopyI8(GenericBuffer *dst, const ImageBackend *textureData) {
         for (uint16_t x = 0; x < width; x++) {
             size_t pos = (y * width) + x;
             RGBAPixel pixel = ImageBackend_GetPixel(textureData, y, x);
-            dst->textureBuffer[pos] = pixel.r;
+            dst->buffer[pos] = pixel.r;
         }
     }
 }
@@ -95,7 +95,7 @@ void PngTexture_CopyIA4(GenericBuffer *dst, const ImageBackend *textureData) {
                     data |= ((cR / 32) << 1) + alphaBit;
             }
 
-            dst->textureBuffer[pos] = data;
+            dst->buffer[pos] = data;
         }
     }
 }
@@ -112,7 +112,7 @@ void PngTexture_CopyIA8(GenericBuffer *dst, const ImageBackend *textureData) {
             uint8_t r = pixel.r;
             uint8_t a = pixel.a;
 
-            dst->textureBuffer[pos] = ((r / 16) << 4) + (a / 16);
+            dst->buffer[pos] = ((r / 16) << 4) + (a / 16);
         }
     }
 }
@@ -129,8 +129,8 @@ void PngTexture_CopyIA16(GenericBuffer *dst, const ImageBackend *textureData) {
             uint8_t cR = pixel.r;
             uint8_t aR = pixel.a;
 
-            dst->textureBuffer[pos + 0] = cR;
-            dst->textureBuffer[pos + 1] = aR;
+            dst->buffer[pos + 0] = cR;
+            dst->buffer[pos + 1] = aR;
         }
     }
 }
@@ -146,7 +146,7 @@ void PngTexture_CopyCI4(GenericBuffer *dst, const ImageBackend *textureData) {
             uint8_t cR1 = ImageBackend_GetIndexedPixel(textureData, y, x);
             uint8_t cR2 = ImageBackend_GetIndexedPixel(textureData, y, x + 1);
 
-            dst->textureBuffer[pos] = (cR1 << 4) | (cR2);
+            dst->buffer[pos] = (cR1 << 4) | (cR2);
         }
     }
 }
@@ -160,7 +160,7 @@ void PngTexture_CopyCI8(GenericBuffer *dst, const ImageBackend *textureData) {
             size_t pos = ((y * width) + x);
             uint8_t cR = ImageBackend_GetIndexedPixel(textureData, y, x);
 
-            dst->textureBuffer[pos] = cR;
+            dst->buffer[pos] = cR;
         }
     }
 }
@@ -183,9 +183,10 @@ void PngTexture_CopyPng(GenericBuffer *dst, const ImageBackend *textureData, Tex
     // TODO?
     assert(!dst->hasData);
 
-    dst->bufferLength = textureData->width * textureData->height;
-    dst->bufferLength *= ImageBackend_GetBytesPerPixel(textureData);
-    dst->textureBuffer = malloc(dst->bufferLength);
+    dst->bufferSize = textureData->width * textureData->height;
+    dst->bufferSize *= ImageBackend_GetBytesPerPixel(textureData);
+    dst->bufferLength = dst->bufferSize;
+    dst->buffer = malloc(dst->bufferSize);
 
     readPngArray[texType](dst, textureData);
 

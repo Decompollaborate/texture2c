@@ -10,9 +10,10 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "png_texture.h"
 #include "generic_buffer.h"
 #include "image_backend.h"
+#include "png_texture.h"
+#include "jpeg_texture.h"
 
 /* Defines */
 #define OPTSRT ""
@@ -52,7 +53,16 @@ void ReadPng(GenericBuffer* buf, const char* inPath, TextureType texType) {
     ImageBackend_Destroy(&textureData);
 }
 
-#define COMPRESS_TEST
+void ReadJpeg(GenericBuffer* buf, const char* inPath) {
+    FILE *inFile = fopen(inPath, "rb");
+
+    JpegTexture_ReadJpeg(buf, inFile, true);
+    JpegTexture_CheckValidJpeg(buf);
+
+    fclose(inFile);
+}
+
+//#define COMPRESS_TEST
 
 int main(int argc, const char* argv[]) {
     if (argc < 3) {
@@ -64,7 +74,9 @@ int main(int argc, const char* argv[]) {
     GenericBuffer genericBuf;
     GenericBuffer_Init(&genericBuf);
 
-    ReadPng(&genericBuf, argv[1], TextureType_rgba16);
+    //ReadPng(&genericBuf, argv[1], TextureType_rgba16);
+    ReadJpeg(&genericBuf, argv[1]);
+
 
 #ifdef COMPRESS_TEST
     GenericBuffer_Yaz0Compress(&genericBuf);
