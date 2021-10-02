@@ -33,31 +33,31 @@ void ImageBackend_ReadPng(ImageBackend* image, const char* filename) {
         // throw std::runtime_error(StringHelper::Sprintf(
         //	"ImageBackend::ReadPng: Error.\n\t Couldn't open file '%s'.",
         // filename));
-		// TODO
-		assert(!"Couldn't open file");
+        // TODO
+        assert(!"Couldn't open file");
     }
 
     png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     if (png == NULL) {
         // throw std::runtime_error("ImageBackend::ReadPng: Error.\n\t Couldn't
         // create png struct.");
-		// TODO
-		assert(!"Couldn't create png struct");
+        // TODO
+        assert(!"Couldn't create png struct");
     }
 
     png_infop info = png_create_info_struct(png);
     if (info == NULL) {
         // throw std::runtime_error("ImageBackend::ReadPng: Error.\n\t Couldn't
         // create png info.");
-		// TODO
-		assert(!"Couldn't create png info");
+        // TODO
+        assert(!"Couldn't create png info");
     }
 
     if (setjmp(png_jmpbuf(png))) {
         // throw std::runtime_error("ImageBackend_ReadPng: Error.\n\t
         // setjmp(png_jmpbuf(ImageBackend* image,png)).");
-		// TODO
-		assert(!"setjmp(png_jmpbuf(png))");
+        // TODO
+        assert(!"setjmp(png_jmpbuf(png))");
     }
 
     png_init_io(png, fp);
@@ -163,31 +163,31 @@ void ImageBackend_WritePng(ImageBackend* image, const char* filename) {
         // throw std::runtime_error(StringHelper::Sprintf(
         //	"ImageBackend::WritePng: Error.\n\t Couldn't open file '%s' in write
         // mode.", filename));
-		// TODO
-		assert(!"Couldn't open file");
+        // TODO
+        assert(!"Couldn't open file");
     }
 
     png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     if (!png) {
         // throw std::runtime_error("ImageBackend::WritePng: Error.\n\t Couldn't
         // create png struct.");
-		// TODO
-		assert(!"Couldn't create png struct");
+        // TODO
+        assert(!"Couldn't create png struct");
     }
 
     png_infop info = png_create_info_struct(png);
     if (info == NULL) {
         // throw std::runtime_error("ImageBackend::WritePng: Error.\n\t Couldn't
         // create png info.");
-		// TODO
-		assert(!"Couldn't create png info");
+        // TODO
+        assert(!"Couldn't create png info");
     }
 
     if (setjmp(png_jmpbuf(png))) {
         // throw std::runtime_error("ImageBackend_WritePng: Error.\n\t
         // setjmp(png_jmpbuf(ImageBackend* image,png)).");
-		// TODO
-		assert(!"setjmp(png_jmpbuf(png))");
+        // TODO
+        assert(!"setjmp(png_jmpbuf(png))");
     }
 
     png_init_io(png, fp);
@@ -420,8 +420,8 @@ double ImageBackend_GetBytesPerPixel(const ImageBackend* image) {
         default:
             // throw std::invalid_argument("ImageBackend_GetBytesPerPixel(ImageBackend*
             // image,):\n\t Invalid color type.");
-			// TODO
-			assert(!"Invalid color type");
+            // TODO
+            assert(!"Invalid color type");
             return -1;
             break;
     }
