@@ -268,7 +268,7 @@ void PngTexture_WriteRaw(PngTexture* texture, const char* outPath) {
             }
         }
 
-        if ((i/step + 1) % 4 == 0) {
+        if ((i / step + 1) % 4 == 0) {
             fprintf(outFile, "\n");
         }
     }

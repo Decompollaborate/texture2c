@@ -5,7 +5,7 @@ ASAN        ?= 0
 ELF         := texture2c.elf
 
 CC          := clang
-INC        := -I include
+INC        := -I include -I lib
 WARNINGS    := -Wall -Wextra -Wshadow -Werror=implicit-function-declaration
 CFLAGS      := -std=c11
 LDFLAGS     := -lpng
@@ -31,6 +31,10 @@ C_FILES     := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.c))
 H_FILES     := $(foreach dir,$(INC),$(wildcard $(dir)/*.h))
 O_FILES     := $(foreach f,$(C_FILES:.c=.o),build/$f)
 
+LIB_DIRS    := $(shell find lib -type d)
+C_LIB_FILES := $(foreach dir,$(LIB_DIRS),$(wildcard $(dir)/*.c))
+O_LIB_FILES := $(foreach f,$(C_LIB_FILES:.c=.o),build/$f)
+
 # Main targets
 all: $(ELF)
 
@@ -43,10 +47,13 @@ format:
 .PHONY: all clean format
 
 # create build directories
-$(shell mkdir -p $(foreach dir,$(SRC_DIRS),build/$(dir)))
+$(shell mkdir -p $(foreach dir,$(SRC_DIRS),build/$(dir)) $(foreach dir,$(LIB_DIRS),build/$(dir)))
 
-$(ELF): $(O_FILES)
+$(ELF): $(O_FILES) $(O_LIB_FILES)
 	$(CC) $(INC) $(WARNINGS) $(CFLAGS) $(OPTFLAGS) $(LDFLAGS) -o $@ $^
 
-build/src/%.o: src/%.c $(H_FILES)
+build/%.o: %.c $(H_FILES)
+	$(CC) -c $(INC) $(WARNINGS) $(CFLAGS) $(OPTFLAGS) -o $@ $<
+
+build/lib/%.o: lib/%.c
 	$(CC) -c $(INC) $(WARNINGS) $(CFLAGS) $(OPTFLAGS) -o $@ $<
