@@ -284,13 +284,13 @@ void PngTexture_Yaz0Compress(PngTexture* texture) {
 
     size_t uncompressedSize = texture->bufferLength;
 
-    uint8_t *tempBuffer = malloc(uncompressedSize * sizeof(uint8_t) * 2);
+    uint8_t* tempBuffer = malloc(uncompressedSize * sizeof(uint8_t) * 2);
 
     // compress data
     size_t compSize = yaz0_encode(texture->textureBuffer, tempBuffer, uncompressedSize);
 
     // make Yaz0 header
-    uint8_t header[16] = {0};
+    uint8_t header[16] = { 0 };
     header[0] = 'Y';
     header[1] = 'a';
     header[2] = 'z';
@@ -298,7 +298,7 @@ void PngTexture_Yaz0Compress(PngTexture* texture) {
     FromUInt32ToBE(header, 4, uncompressedSize);
 
     memcpy(texture->textureBuffer, header, ARRAY_COUNT(header));
-    memcpy(texture->textureBuffer+ARRAY_COUNT(header), tempBuffer, compSize);
+    memcpy(texture->textureBuffer + ARRAY_COUNT(header), tempBuffer, compSize);
 
     texture->bufferLength = ARRAY_COUNT(header) + compSize;
     texture->isCompressed = true;
