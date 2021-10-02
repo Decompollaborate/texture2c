@@ -52,6 +52,8 @@ Mkfile.old
 dkms.conf
 
 # VSCode
-.vscode
+.vscode/
 
+# Custom
+build/
 *.inc.c
