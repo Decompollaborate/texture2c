@@ -204,26 +204,74 @@ void PngTexture_ReadPng(PngTexture* texture, const char* pngPath, TextureType te
     texture->hasData = true;
 }
 
-void PngTexture_Write64(PngTexture* texture, FILE* outFile) {
-    size_t width = texture->textureData.width;
-    size_t height = texture->textureData.height;
-
-    size_t bufferSize = width * height * ImageBackend_GetBytesPerPixel(&texture->textureData);
-
-    for (size_t i = 0; i < bufferSize; i += 8) {
-        fprintf(outFile, "0x%016lX, ", ToUInt64BE(texture->textureBuffer, i));
-        if (i % 32 == 24) {
-            fprintf(outFile, "\n");
-        }
-    }
-}
-
 void PngTexture_WriteRaw(PngTexture* texture, const char* outPath) {
     assert(texture->hasData);
+    assert(texture->format >= 0 && texture->format < TextureType_Max);
 
     FILE* outFile = fopen(outPath, "w");
 
-    PngTexture_Write64(texture, outFile);
+    size_t width = texture->textureData.width;
+    size_t height = texture->textureData.height;
+    size_t bufferSize = width * height * ImageBackend_GetBytesPerPixel(&texture->textureData);
+
+    size_t step = 8;
+    if (!true) {
+        switch (texture->format) {
+            case TextureType_rgba32:
+                step = 4;
+                break;
+
+            case TextureType_rgba16:
+            case TextureType_ia16:
+                step = 2;
+                break;
+
+            case TextureType_i4:
+            case TextureType_i8:
+            case TextureType_ia4:
+            case TextureType_ia8:
+            case TextureType_ci4:
+            case TextureType_ci8:
+                step = 1;
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    for (size_t i = 0; i < bufferSize; i += step) {
+        if (true) {
+            fprintf(outFile, "0x%016lX, ", ToUInt64BE(texture->textureBuffer, i));
+        } else {
+            switch (texture->format) {
+                case TextureType_rgba32:
+                    fprintf(outFile, "0x%08X, ", ToUInt32BE(texture->textureBuffer, i));
+                    break;
+
+                case TextureType_rgba16:
+                case TextureType_ia16:
+                    fprintf(outFile, "0x%04X, ", ToUInt16BE(texture->textureBuffer, i));
+                    break;
+
+                case TextureType_i4:
+                case TextureType_i8:
+                case TextureType_ia4:
+                case TextureType_ia8:
+                case TextureType_ci4:
+                case TextureType_ci8:
+                    fprintf(outFile, "0x%02X, ", ToUInt8BE(texture->textureBuffer, i));
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+        if ((i/step + 1) % 4 == 0) {
+            fprintf(outFile, "\n");
+        }
+    }
 
     fclose(outFile);
 }
