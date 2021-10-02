@@ -4,8 +4,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-
-
 int8_t ToInt8BE(const uint8_t* data, int32_t offset);
 uint8_t ToUInt8BE(const uint8_t* data, int32_t offset);
 
