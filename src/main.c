@@ -163,12 +163,15 @@ void ConstructLongOpts() {
 // }
 
 void PrintHanging(const char* string, size_t lineWidth, size_t indent, size_t firstLineIndent) {
-    size_t index = CLAMP_MIN(lineWidth - firstLineIndent, 0);
+    size_t index;
+    size_t textWidth;
     // char* lineString = malloc((lineWidth + 1) * sizeof(char));
-    ssize_t textWidth = lineWidth - indent;
 
-    assert(lineWidth > 0);
-    assert(textWidth > 0);
+    assert(lineWidth > firstLineIndent);
+    assert(lineWidth > indent);
+    
+    index = lineWidth - firstLineIndent;
+    textWidth = lineWidth - indent;
 
     // TODO: modify string to deal with \n and break at spaces
 
