@@ -19,7 +19,7 @@ endif
 # CFLAGS      += -DTEXTURE_DEBUG
 
 ifneq ($(ASAN),0)
-  CFLAGS    += -fsanitize=address
+  CFLAGS    += -fsanitize=address -fsanitize=pointer-compare -fsanitize=pointer-subtract -fsanitize=pointer-subtract -fsanitize=undefined
 endif
 
 ifneq ($(LLD),0)

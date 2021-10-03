@@ -186,7 +186,7 @@ void PngTexture_CopyPng(GenericBuffer *dst, const ImageBackend *textureData, Tex
     dst->bufferSize = textureData->width * textureData->height;
     dst->bufferSize *= ImageBackend_GetBytesPerPixel(textureData);
     dst->bufferLength = dst->bufferSize;
-    dst->buffer = malloc(dst->bufferSize);
+    dst->buffer = calloc(dst->bufferSize, sizeof(uint8_t));
 
     readPngArray[texType](dst, textureData);
 
