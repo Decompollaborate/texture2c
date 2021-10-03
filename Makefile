@@ -6,7 +6,7 @@ ELF         := texture2c.elf
 
 CC          := clang
 INC        := -I include -I lib
-WARNINGS    := -Wall -Wextra -Wshadow -Werror=implicit-function-declaration
+WARNINGS    := -Wall -Wextra -Wpedantic -Wshadow -Werror=implicit-function-declaration -Wvla
 CFLAGS      := -std=c11
 LDFLAGS     := -lpng
 
@@ -19,7 +19,7 @@ endif
 # CFLAGS      += -DTEXTURE_DEBUG
 
 ifneq ($(ASAN),0)
-  CFLAGS    += -fsanitize=address
+  CFLAGS    += -fsanitize=address -fsanitize=pointer-compare -fsanitize=pointer-subtract -fsanitize=pointer-subtract -fsanitize=undefined
 endif
 
 ifneq ($(LLD),0)
