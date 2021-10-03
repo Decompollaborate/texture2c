@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "bit_convert.h"
 #include "yaz0/yaz0.h"
@@ -51,19 +52,19 @@ void GenericBuffer_WriteRaw(GenericBuffer* buffer, TypeBitWidth bitWidth, FILE* 
     for (size_t i = 0; i < buffer->bufferLength; i += step) {
         switch (bitWidth) {
             case TypeBitWidth_64:
-                fprintf(outFile, "0x%016lX, ", ToUInt64BE(buffer->buffer, i));
+                fprintf(outFile, "0x%016" PRIX64 ", ", ToUInt64BE(buffer->buffer, i));
                 break;
 
             case TypeBitWidth_32:
-                fprintf(outFile, "0x%08X, ", ToUInt32BE(buffer->buffer, i));
+                fprintf(outFile, "0x%08" PRIX32 ", ", ToUInt32BE(buffer->buffer, i));
                 break;
 
             case TypeBitWidth_16:
-                fprintf(outFile, "0x%04X, ", ToUInt16BE(buffer->buffer, i));
+                fprintf(outFile, "0x%04" PRIX16 ", ", ToUInt16BE(buffer->buffer, i));
                 break;
 
             case TypeBitWidth_8:
-                fprintf(outFile, "0x%02X, ", ToUInt8BE(buffer->buffer, i));
+                fprintf(outFile, "0x%02" PRIX8 ", ", ToUInt8BE(buffer->buffer, i));
                 break;
 
             default:
