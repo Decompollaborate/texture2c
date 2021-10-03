@@ -102,6 +102,144 @@ void ConstructLongOpts() {
 
 #define CLAMP_MIN(x, min) ((x) < (min) ? (min) : (x))
 
+// void PrintFlowAndIndent(const char* string, size_t initialColumn, size_t textWidth, size_t hangingIndent) {
+//     size_t column = initialColumn;
+//     size_t index = 0;
+//     size_t inLength = strlen(string);
+//     char* lineBuffer = malloc((textWidth + 1) * sizeof(char));
+//     char* indentString = malloc(hangingIndent * sizeof(char));
+
+//     assert(initialColumn < textWidth);
+//     assert(hangingIndent < textWidth);
+
+//     memset(lineBuffer, ' ', textWidth);
+//     lineBuffer[textWidth] == '\0';
+
+//     for (; index <= inLength; index++) {
+//         if (string[index] == '\0') {
+//             printf("%s", lineBuffer);
+//             break;
+//         }
+//         if (string[index] == '\n' || column == textWidth) {
+//             printf("%s\n", lineBuffer);
+//             column = hangingIndent;
+//             memset(lineBuffer + hangingIndent, ' ', textWidth - hangingIndent);
+//             continue;
+//         }
+//         if (string[index] == ' ') {
+//             size_t lookAhead;
+
+//             for (lookAhead = 1; lookAhead <= textWidth - column; lookAhead++) {
+//                 // printf("%c\n", src[index + lookAhead]);
+//                 if (string[index + lookAhead] == ' ') {
+//                     break;
+//                 } else if (lookAhead == textWidth - column) {
+//                     printf("%s\n", lineBuffer);
+//                     column = hangingIndent;
+//                     memset(lineBuffer + hangingIndent, ' ', textWidth - hangingIndent);
+//                     break;
+//                 }
+//             }
+//         }
+
+//         lineBuffer[column] = string[index];
+//     }
+
+//     free(lineBuffer);
+// }
+// void PrintFlowAndIndent(const char* string, size_t initialColumn, size_t textWidth, size_t hangingIndent) {
+//     size_t column = initialColumn;
+//     size_t index = 0;
+//     size_t inLength = strlen(string);
+//     char* indentString = malloc(hangingIndent * sizeof(char));
+
+//     assert(initialColumn < textWidth);
+//     assert(hangingIndent < textWidth);
+
+//     for (; index <= inLength; index++) {
+//         if (string[index] == '\0') {
+//             break;
+//         }
+//         if (string[index] == '\n' || column == textWidth) {
+//             putchar('\n');
+//             column = hangingIndent;
+//             continue;
+//         }
+//         if (string[index] == ' ') {
+//             size_t lookAhead;
+
+//             for (lookAhead = 1; lookAhead <= textWidth - column; lookAhead++) {
+//                 // printf("%c\n", src[index + lookAhead]);
+//                 if (string[index + lookAhead] == ' ') {
+//                     break;
+//                 } else if (lookAhead == textWidth - column) {
+//                     putchar('\n');
+//                     column = hangingIndent;
+//                     break;
+//                 }
+//             }
+//         }
+
+//         putchar(string[index]);
+//     }
+
+// }
+void PrintFlowAndIndent(const char* string, size_t initialColumn, size_t textWidth, size_t hangingIndent) {
+    size_t column = initialColumn;
+    size_t index = 0;
+    size_t inLength = strlen(string);
+    size_t lookAhead;
+    bool shouldBreak;
+
+    assert(initialColumn < textWidth);
+    assert(hangingIndent < textWidth);
+
+    printf("%*s", (int)initialColumn, "");
+
+    for (; index <= inLength; index++) {
+        shouldBreak = 0;
+
+        if (column == textWidth) {
+            printf("%c\n%*s", string[index], (int)hangingIndent, "");
+            column = hangingIndent;
+            continue;
+        }
+
+        column++;
+
+        switch (string[index]) {
+            case '\0':
+                return;
+
+            case ' ':
+                if (column == hangingIndent) {
+                    continue;
+                }
+
+                for (lookAhead = 0; lookAhead <= textWidth - column; lookAhead++) {
+                    // printf("%c\n", src[index + lookAhead]);
+                    if (string[index + lookAhead + 1] == ' ') {
+                        putchar(' ');
+                        shouldBreak = 1;
+                        break;
+                    }
+                }
+                if (shouldBreak) { /* Damn shared keywords. */
+                    break;
+                }
+            case '\n':
+                printf("\n%*s", (int)hangingIndent, "");
+                column = hangingIndent;
+                break;
+
+            default:
+                // column++;
+                putchar(string[index]);
+                break;
+        }
+    }
+}
+
 /**
  * Index for start, copy characters up to max 'textWidth'
  * When encounter an \n, break immediately, and start the next line if there is more
@@ -114,53 +252,136 @@ void ConstructLongOpts() {
  */
 
 /**
- * Reflow text to a specified width, with word wrap.
+ * Reflow text to a specified width, width word wrap.
  */
-// char* ReflowText(char* dest, const char* src, size_t width) {
-//     size_t index = 0;
-//     size_t outdex = 0;
-//     size_t column = 0;
-//     size_t lookAhead = 0;
+char* ReflowText(char* dest, const char* src, size_t width) {
+    size_t index = 0;
+    size_t outdex = 0;
+    size_t column = 0;
+    size_t lookAhead = 0;
+    size_t srcLen = strlen(src);
 
-//     assert(src != NULL);
-//     assert(dest != NULL);
-//     assert(width > 0);
+    assert(src != NULL);
+    assert(dest != NULL);
+    assert(width > 0);
 
-//     while (index < strlen(src)) {
-//         char c = src[index];
-        
-//         if (column == width) {
-//             dest[outdex] = '\n';
-//             column = 0;
-//         }
+    while (index < srcLen) {
+        char c = src[index];
+        // printf("%2ld,%2ld,%c\n", index, outdex, c);
 
-//         switch (c) {
-//             case ' ':
-//                 /* lookahead */
-//                 for (lookAhead = 1; lookAhead < width - column; lookAhead++) {
-//                     if (src[index + lookAhead] == ' ') {
-//                         dest[outdex] = src[index];
-//                         break;
-//                     }
-//                 }
-                
+        if (column == width) {
+            dest[outdex] = '\n';
+            column = 0;
+        }
 
-//                 break;
+        switch (c) {
+            case ' ':
+                for (lookAhead = 1; lookAhead <= width - column; lookAhead++) {
+                    // printf("%c\n", src[index + lookAhead]);
+                    if (src[index + lookAhead] == ' ') {
+                        dest[outdex] = src[index];
+                        break;
+                    } else if (lookAhead == width - column) {
+                        dest[outdex] = '\n';
+                        index++;
+                        outdex++;
+                        column = 0;
+                    }
+                }
 
-//             case '\n':
-//                 column = 0;
+                break;
 
-//             default:
-//                 dest[outdex] = src[index];
-//                 break;
-//         }
+            case '\n':
+                column = 0;
 
-//         index++;
-//         outdex++;
-//         column++;
-//     }
+            default:
+                dest[outdex] = src[index];
+                break;
+        }
+        // printf("\n");
+        // printf("%s\n", dest);
 
-// }
+        index++;
+        outdex++;
+        column++;
+    }
+    dest[outdex++] = '\n';
+    dest[outdex++] = '\0';
+    return dest;
+}
+
+/**
+ * Indent text.
+ */
+char* Indent(char* dest, const char* src, size_t indent) {
+    size_t index = 0;
+    size_t outdex = 0;
+    size_t srcLen = strlen(src);
+
+    while (index <= srcLen) {
+        dest[outdex] = src[index];
+        outdex++;
+
+        if (src[index] == '\n') {
+            size_t i;
+            for (i = 0; i < indent; i++) {
+                dest[outdex + i] = ' ';
+                printf("%ld", i);
+                printf("%c", dest[outdex + i]);
+            }
+            printf("\n");
+            // printf("%s\n", dest);
+            outdex += indent;
+        }
+        index++;
+    }
+    return dest;
+}
+
+void Test() {
+    char* testStr = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut "
+                    "labore et dolore magna aliqua.  Ut enim ad minim veniam, quis nostrud exercitation ullamco "
+                    "laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in "
+                    "voluptate velit esse cillum dolore eu fugiat nulla pariatur.\nExcepteur sint occaecat cupidatat "
+                    "non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+    size_t width = 78;
+    size_t indent = 20;
+    size_t initialColumn = 30;
+    // size_t midLen = strlen(testStr) + strlen(testStr) / width + 1;
+    // char* mid = malloc(midLen * sizeof(char));
+    // char* final;
+    // size_t n = 1;
+    // size_t i;
+
+    char* buffer = malloc((width + 1) * sizeof(char));
+    // printf("%s\n", testStr);
+    memset(buffer, '-', initialColumn);
+    memset(buffer + initialColumn, '=', width - initialColumn);
+    buffer[width] = '\0';
+    printf("%s\n", buffer);
+
+    // ReflowText(mid, testStr, width);
+
+    // printf("%s", mid);
+    // printf("%s\n", buffer);
+    // for (i = 0; i < midLen; i++) {
+    //     if (mid[i] == '\n') {
+    //         n++;
+    //     }
+    // }
+
+    // final = malloc((midLen + n * indent + 1) * sizeof(char));
+    // Indent(final, mid, indent);
+
+    // printf("%s\n", final);
+    // printf("%s\n", buffer);
+
+    // free(mid);
+    // free(final);
+    PrintFlowAndIndent(testStr, 30, width, indent);
+    putchar('\n');
+    printf(" %*s\n", (int)indent, "|");
+}
 
 void PrintHanging(const char* string, size_t lineWidth, size_t indent, size_t firstLineIndent) {
     size_t index;
@@ -169,7 +390,7 @@ void PrintHanging(const char* string, size_t lineWidth, size_t indent, size_t fi
 
     assert(lineWidth > firstLineIndent);
     assert(lineWidth > indent);
-    
+
     index = lineWidth - firstLineIndent;
     textWidth = lineWidth - indent;
 
@@ -214,8 +435,11 @@ void PrintHelp() {
     printf("\n");
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char** argv) {
     int opt;
+
+    Test();
+    return 0;
 
     ConstructLongOpts();
 
