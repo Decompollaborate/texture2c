@@ -374,5 +374,12 @@ int main(int argc, char** argv) {
 
     GenericBuffer_Destroy(&genericBuf);
 
+    if (gState.inputFile != stdin) {
+        fclose(gState.inputFile);
+    }
+    if (gState.outputFile != stdout) {
+        fclose(gState.outputFile);
+    }
+
     return EXIT_SUCCESS;
 }
