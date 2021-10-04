@@ -5,6 +5,7 @@
 /* Includes */
 #include "main.h"
 
+#include <assert.h>
 #include <getopt.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -98,29 +99,21 @@ char* BadDictReverseLookup(char* dest, int eNum, const PoorMansDict* dict) {
     return NULL;
 }
 
-void ReadPng(GenericBuffer* buf, const char* inPath, TextureType texType) {
+void ReadPng(GenericBuffer* buf, FILE* inFile, TextureType texType) {
     ImageBackend textureData;
     ImageBackend_Init(&textureData);
 
-    FILE* inFile = fopen(inPath, "rb");
     ImageBackend_ReadPng(&textureData, inFile);
-    fclose(inFile);
 
     PngTexture_CopyPng(buf, &textureData, texType);
 
     ImageBackend_Destroy(&textureData);
 }
 
-void ReadJpeg(GenericBuffer* buf, const char* inPath) {
-    FILE* inFile = fopen(inPath, "rb");
-
+void ReadJpeg(GenericBuffer* buf, FILE* inFile) {
     JpegTexture_ReadJpeg(buf, inFile, true);
     JpegTexture_CheckValidJpeg(buf);
-
-    fclose(inFile);
 }
-
-//#define COMPRESS_TEST
 
 /* Options */
 
@@ -296,8 +289,10 @@ int main(int argc, char** argv) {
 
             case TextureType_i8:
             case TextureType_ia8:
+            case TextureType_ci8:
             case TextureType_i4:
             case TextureType_ia4:
+            case TextureType_ci4:
                 gState.bitGroupSize = TypeBitWidth_8;
                 break;
 
@@ -346,21 +341,36 @@ int main(int argc, char** argv) {
                 return EXIT_FAILURE;
         }
     }
-    
 
-    return EXIT_SUCCESS;
+    assert(gState.inputFile != NULL);
+
     GenericBuffer genericBuf;
     GenericBuffer_Init(&genericBuf);
 
-    // ReadPng(&genericBuf, argv[1], TextureType_rgba16);
-    ReadJpeg(&genericBuf, argv[1]);
+    switch (gState.inputFileFormat) {
+        case FORMAT_PNG:
+            ReadPng(&genericBuf, gState.inputFile, gState.pixelFormat);
+            break;
 
-#ifdef COMPRESS_TEST
-    GenericBuffer_Yaz0Compress(&genericBuf);
-#endif
-    FILE* outFile = fopen(argv[2], "w");
-    GenericBuffer_WriteRaw(&genericBuf, TypeBitWidth_64, outFile);
-    fclose(outFile);
+        case FORMAT_JPEG:
+            ReadJpeg(&genericBuf, gState.inputFile);
+            break;
+
+        default:
+            assert(!"Input format not implemented?");
+            break;
+    }
+
+    if (gState.compress) {
+        GenericBuffer_Yaz0Compress(&genericBuf);
+    }
+
+    assert(gState.outputFile != NULL);
+    //if (gState.rawOut) {
+        GenericBuffer_WriteRaw(&genericBuf, gState.bitGroupSize, gState.outputFile);
+    //} else {
+        // TODO
+    //}
 
     GenericBuffer_Destroy(&genericBuf);
 
