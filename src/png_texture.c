@@ -183,8 +183,7 @@ void PngTexture_CopyPng(GenericBuffer *dst, const ImageBackend *textureData, Tex
     // TODO?
     assert(!dst->hasData);
 
-    dst->bufferSize = textureData->width * textureData->height;
-    dst->bufferSize *= PngTexture_BytesPerPixel(texType);
+    dst->bufferSize = textureData->width * textureData->height * PngTexture_BitsPerPixel(texType) / 8;
     dst->bufferLength = dst->bufferSize;
     dst->buffer = calloc(dst->bufferSize, sizeof(uint8_t));
 
@@ -193,24 +192,24 @@ void PngTexture_CopyPng(GenericBuffer *dst, const ImageBackend *textureData, Tex
     dst->hasData = true;
 }
 
-float PngTexture_BytesPerPixel(TextureType texType) {
-
+uint32_t PngTexture_BitsPerPixel(TextureType texType) {
     switch (texType) {
         case TextureType_rgba32:
-            return 4.0f;
+            return 32;
 
         case TextureType_rgba16:
         case TextureType_ia16:
-            return 2.0f;
+            return 16;
 
         case TextureType_i8:
         case TextureType_ia8:
         case TextureType_ci8:
-            return 1.0f;
+            return 8;
+
         case TextureType_i4:
         case TextureType_ia4:
         case TextureType_ci4:
-            return 0.5f;
+            return 4;
 
         case TextureType_Max:
             break;

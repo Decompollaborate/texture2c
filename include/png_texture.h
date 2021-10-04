@@ -23,4 +23,4 @@ typedef enum TextureType {
 
 void PngTexture_CopyPng(GenericBuffer *dst, const ImageBackend *textureData, TextureType texType);
 
-float PngTexture_BytesPerPixel(TextureType texType);
+uint32_t PngTexture_BitsPerPixel(TextureType texType);
