@@ -1,6 +1,7 @@
 #include "image_backend.h"
 
 #include <assert.h>
+#include <string.h>
 #include <png.h>
 
 /* ImageBackend */
@@ -96,6 +97,48 @@ void ImageBackend_ReadPng(ImageBackend* image, FILE* inFile) {
     if (image->colorType == PNG_COLOR_TYPE_PALETTE) {
         // png_set_palette_to_rgb(png);
         image->isColorIndexed = true;
+
+        int paletteSizeTemp = 256;
+        png_color* colorPaletteTemp;
+
+        png_get_PLTE(png, info, &colorPaletteTemp, &paletteSizeTemp);
+        assert(paletteSizeTemp <= 256);
+        image->paletteSize = paletteSizeTemp;
+
+        image->colorPalette = malloc(paletteSizeTemp * sizeof(png_color));
+        memcpy(image->colorPalette, colorPaletteTemp, paletteSizeTemp);
+
+#ifdef TEXTURE_DEBUG
+        {
+            printf("palette\n  size: %zu\n", image->paletteSize);
+            png_color* aux = (png_color*)image->colorPalette;
+            for (size_t y = 0; y < image->paletteSize; y++) {
+                printf("#%02X%02X%02X ", aux[y].red, aux[y].green, aux[y].blue);
+                if ((y + 1) % 8 == 0)
+                    printf("\n");
+            }
+            printf("\n");
+        }
+#endif
+
+        png_byte* alphaPaletteTemp;
+        png_get_tRNS(png, info, &alphaPaletteTemp, &paletteSizeTemp, NULL);
+
+        image->alphaPalette = malloc(paletteSizeTemp);
+        memcpy(image->alphaPalette, alphaPaletteTemp, paletteSizeTemp);
+
+#ifdef TEXTURE_DEBUG
+        {
+            printf("alpha\n  size: %zu\n", paletteSizeTemp);
+            png_byte* aux = (png_byte*)image->colorPalette;
+            for (size_t y = 0; y < image->paletteSize; y++) {
+                printf("%02X ", aux[y]);
+                if ((y + 1) % 8 == 0)
+                    printf("\n");
+            }
+            printf("\n");
+        }
+#endif
     }
 
     // PNG_COLOR_TYPE_GRAY_ALPHA is always 8 or 16bit depth.
@@ -368,24 +411,6 @@ void ImageBackend_SetPalette(ImageBackend* image, const ImageBackend* pal) {
             ImageBackend_SetPaletteIndex(image, index, r, g, b, a);
         }
     }
-}
-
-// TODO: consider removing:
-
-uint32_t ImageBackend_GetWidth(const ImageBackend* image) {
-    return image->width;
-}
-
-uint32_t ImageBackend_GetHeight(const ImageBackend* image) {
-    return image->height;
-}
-
-uint8_t ImageBackend_GetColorType(const ImageBackend* image) {
-    return image->colorType;
-}
-
-uint8_t ImageBackend_GetBitDepth(const ImageBackend* image) {
-    return image->bitDepth;
 }
 
 double ImageBackend_GetBytesPerPixel(const ImageBackend* image) {

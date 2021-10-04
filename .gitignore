@@ -57,3 +57,4 @@ dkms.conf
 # Custom
 build/
 *.inc.c
+testing_textures/

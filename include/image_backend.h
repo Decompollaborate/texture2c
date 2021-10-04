@@ -54,13 +54,6 @@ void ImageBackend_SetIndexedPixel(ImageBackend* image, size_t y, size_t x, uint8
 void ImageBackend_SetPaletteIndex(ImageBackend* image, size_t index, uint8_t nR, uint8_t nG, uint8_t nB, uint8_t nA);
 void ImageBackend_SetPalette(ImageBackend* image, const ImageBackend* pal);
 
-uint32_t ImageBackend_GetWidth(const ImageBackend* image);
-uint32_t ImageBackend_GetHeight(const ImageBackend* image);
-uint8_t ImageBackend_GetColorType(const ImageBackend* image);
-uint8_t ImageBackend_GetBitDepth(const ImageBackend* image);
-
-/* Protected */
-
 double ImageBackend_GetBytesPerPixel(const ImageBackend* image);
 
 void ImageBackend_FreeImageData(ImageBackend* image);
