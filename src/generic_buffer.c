@@ -115,3 +115,24 @@ void GenericBuffer_Yaz0Compress(GenericBuffer* buffer) {
 
     free(tempBuffer);
 }
+
+void GenericBuffer_Yaz0Decompress(GenericBuffer* buffer) {
+    assert(buffer->hasData);
+    assert(buffer->isCompressed);
+
+    if (buffer->buffer[0] != 'Y' || buffer->buffer[1] != 'a' || buffer->buffer[2] != 'z' || buffer->buffer[3] != '0') {
+        assert(!"Missing Yaz0 header");
+    }
+    size_t uncompressedSize = ToUInt32BE(buffer->buffer, 4);
+
+    uint8_t* tempBuffer = malloc(uncompressedSize * sizeof(uint8_t));
+
+    yaz0_decode(buffer->buffer + 16, tempBuffer, uncompressedSize);
+
+    memcpy(buffer->buffer, tempBuffer, uncompressedSize);
+
+    buffer->bufferLength = uncompressedSize;
+    buffer->isCompressed = false;
+
+    free(tempBuffer);
+}

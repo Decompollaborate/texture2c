@@ -27,3 +27,4 @@ void GenericBuffer_Destroy(GenericBuffer* buffer);
 void GenericBuffer_WriteRaw(GenericBuffer* buffer, TypeBitWidth bitWidth, FILE* outFile);
 
 void GenericBuffer_Yaz0Compress(GenericBuffer* buffer);
+void GenericBuffer_Yaz0Decompress(GenericBuffer* buffer);
