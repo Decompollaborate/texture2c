@@ -129,7 +129,7 @@ void ImageBackend_ReadPng(ImageBackend* image, FILE* inFile) {
 
 #ifdef TEXTURE_DEBUG
         {
-            printf("alpha\n  size: %zu\n", paletteSizeTemp);
+            printf("alpha\n  size: %i\n", paletteSizeTemp);
             png_byte* aux = (png_byte*)image->colorPalette;
             for (size_t y = 0; y < image->paletteSize; y++) {
                 printf("%02X ", aux[y]);
@@ -171,6 +171,7 @@ void ImageBackend_ReadPng(ImageBackend* image, FILE* inFile) {
     printf("rowBytes: %zu\n", rowBytes);
 
     size_t bytePerPixel = ImageBackend_GetBytesPerPixel(image);
+    printf("bytePerPixel: %zu\n", bytePerPixel);
     printf("imgData\n");
     for (size_t y = 0; y < image->height; y++) {
         for (size_t x = 0; x < image->width; x++) {

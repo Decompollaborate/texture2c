@@ -1,6 +1,7 @@
 DEBUG       ?= 0
 LLD         ?= 1
 ASAN        ?= 0
+TEXTURE_DBG ?= 0
 
 ELF         := texture2c.elf
 
@@ -16,7 +17,9 @@ ifeq ($(DEBUG),0)
 else
   OPTFLAGS  := -O0 -g3
 endif
-# CFLAGS      += -DTEXTURE_DEBUG
+ifneq ($(TEXTURE_DBG),0)
+  CFLAGS    += -DTEXTURE_DEBUG
+endif
 
 ifneq ($(ASAN),0)
   CFLAGS    += -fsanitize=address -fsanitize=pointer-compare -fsanitize=pointer-subtract -fsanitize=undefined

@@ -25,9 +25,11 @@ typedef struct {
     char* description;
 } DiagnosticInfoInit;
 
+/*
 static const DiagnosticInfoInit diagnosticInfoInit = {
-    { NULL, (DiagnosticType)0, DIAGNOSTIC_LEVEL_OFF, NULL },
+    NULL, (DiagnosticType)0, DIAGNOSTIC_LEVEL_OFF, NULL ,
 };
+*/
 
 typedef struct {
     DiagnosticType type;
