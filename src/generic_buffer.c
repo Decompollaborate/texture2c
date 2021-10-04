@@ -29,27 +29,33 @@ void GenericBuffer_WriteRaw(GenericBuffer* buffer, TypeBitWidth bitWidth, FILE* 
     assert(bitWidth >= 0 && bitWidth < TypeBitWidth_Max);
 
     size_t step = 8;
+    size_t elementsPerLine = 4;
     switch (bitWidth) {
         case TypeBitWidth_64:
             step = 8;
+            elementsPerLine = 4;
             break;
         case TypeBitWidth_32:
             step = 4;
+            elementsPerLine = 8;
             break;
 
         case TypeBitWidth_16:
             step = 2;
+            elementsPerLine = 16;
             break;
 
         case TypeBitWidth_8:
             step = 1;
+            elementsPerLine = 32;
             break;
 
         default:
             break;
     }
 
-    for (size_t i = 0; i < buffer->bufferLength; i += step) {
+    size_t i;
+    for (i = 0; i < buffer->bufferLength; i += step) {
         switch (bitWidth) {
             case TypeBitWidth_64:
                 fprintf(outFile, "0x%016" PRIX64 ", ", ToUInt64BE(buffer->buffer, i));
@@ -71,9 +77,14 @@ void GenericBuffer_WriteRaw(GenericBuffer* buffer, TypeBitWidth bitWidth, FILE* 
                 break;
         }
 
-        if ((i / step + 1) % 4 == 0) {
+        if ((i / step + 1) % elementsPerLine == 0) {
             fprintf(outFile, "\n");
         }
+    }
+
+    // Ensure there's a newline at the end
+    if ((i / step) % elementsPerLine != 0) {
+        fprintf(outFile, "\n");
     }
 }
 
