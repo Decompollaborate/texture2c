@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "generic_buffer.h"
@@ -20,6 +21,82 @@
 
 /* Defines */
 #define OPTSRT "c:e:i:p:o:u:hlry"
+
+typedef enum {
+    FORMAT_PNG,
+    FORMAT_JPEG,
+} ImageFileFormat;
+
+typedef struct {
+    FILE* inputFile;
+    FILE* outputFile;
+    ImageFileFormat inputFileFormat;
+    TextureType pixelFormat;
+    TypeBitWidth bitGroupSize; // Is this the right type to use here?
+    char* extraPrefix;
+    char* CType;
+    char* varName;
+
+    bool blobMode;
+    bool extractPalette;
+    bool rawOut;
+    bool compress;
+} State;
+
+State gState = {
+    NULL, NULL, -1, TextureType_rgba16, -1, NULL, NULL, NULL, false, false, false, false,
+};
+
+void GuessInputFileFormat() {
+}
+
+typedef struct {
+    const char* string;
+    int eNum;
+} PoorMansDict;
+
+PoorMansDict textureTypeDict[] = {
+    { "rgba16", TextureType_rgba16 }, { "rgba32", TextureType_rgba32 }, { "i4", TextureType_i4 },
+    { "i8", TextureType_i8 },         { "ia4", TextureType_ia4 },       { "ia8", TextureType_ia8 },
+    { "ia16", TextureType_ia16 },     { "ci4", TextureType_ci4 },       { "ci8", TextureType_ci8 }, { NULL, -1 }
+};
+
+PoorMansDict bitGroupSizeDict[] = {
+    { "8", TypeBitWidth_8 },
+    { "16", TypeBitWidth_16 },
+    { "32", TypeBitWidth_32 },
+    { "64", TypeBitWidth_64 },
+    { NULL, -1 },
+};
+
+int BadDictLookup(const char* string, const PoorMansDict* dict) {
+    size_t i;
+
+    for (i = 0; dict[i].string != NULL; i++) {
+        if (strcmp(dict[i].string, string) == 0) {
+            return dict[i].eNum;
+        }
+    }
+    fprintf(stderr, "String '%s' not found in dictionary", string);
+    return -1;
+}
+
+char* BadDictReverseLookup(char* dest, int eNum, const PoorMansDict* dict) {
+    size_t i;
+
+    for (i = 0; dict[i].eNum != -1; i++) {
+        if (dict[i].eNum == eNum) {
+            // if (ARRAY_COUNT(dest) > strlen(dict[i].string)) {
+                return strcpy(dest, dict[i].string);
+            // } else {
+            //     printf("error: value found, but destination string is too short to copy into");
+            //     return NULL;
+            // }
+        }
+    }
+    fprintf(stderr, "error: numeric value '%d' not found in dictionary", eNum);
+    return NULL;
+}
 
 void ReadPng(GenericBuffer* buf, const char* inPath, TextureType texType) {
     ImageBackend textureData;
@@ -44,7 +121,6 @@ void ReadJpeg(GenericBuffer* buf, const char* inPath) {
 }
 
 //#define COMPRESS_TEST
-
 
 /* Options */
 
@@ -81,6 +157,14 @@ void ConstructLongOpts() {
 int main(int argc, char** argv) {
     int opt;
 
+    if (argc < 2) {
+        // TODO
+        printf("Usage: %s [options] inputFile \n"
+               "Try %s --help for more information.\n",
+               argv[0], argv[0]);
+        return EXIT_FAILURE;
+    }
+
     ConstructLongOpts();
 
     while (true) {
@@ -94,47 +178,66 @@ int main(int argc, char** argv) {
             /* Options */
             case 'c':
                 printf("Using type: %s\n", optarg);
+                gState.CType = optarg;
                 break;
 
             case 'e':
                 printf("Adding extra prefix: %s\n", optarg);
+                gState.extraPrefix = optarg;
                 break;
 
             case 'i':
                 printf("Input format: %s\n", optarg);
+                if ((strcmp(optarg, "png") == 0) || (strcmp(optarg, "PNG") == 0)) {
+                    gState.inputFileFormat = FORMAT_PNG;
+                } else if ((strcmp(optarg, "jpg") == 0) || (strcmp(optarg, "JPG") == 0) || (strcmp(optarg, "jpeg") == 0) ||
+                           (strcmp(optarg, "JPEG") == 0)) {
+                    gState.inputFileFormat = FORMAT_JPEG;
+                }
                 break;
 
             case 'p':
                 printf("Output pixel format: %s\n", optarg);
+                gState.pixelFormat = (TextureType)BadDictLookup(optarg, textureTypeDict);
                 break;
 
             case 'o':
                 printf("Output path: %s\n", optarg);
+                gState.outputFile = fopen(optarg, "w");
                 break;
 
             case 'u':
                 printf("Bit grouping size: %s\n", optarg);
+                gState.bitGroupSize = (TypeBitWidth)BadDictLookup(optarg, bitGroupSizeDict);
                 break;
 
             case 'v':
                 printf("Output variable name: %s\n", optarg);
+                gState.varName = optarg;
                 break;
 
             /* Flags */
+            case 'b':
+                gState.blobMode = true;
+                break;
+
             case 'h':
                 PrintHelp(optCount, optInfo);
                 return EXIT_FAILURE;
 
             case 'l':
                 printf("Extracting palette from PNG...\n");
+                gState.extractPalette = true;
                 break;
 
             case 'r':
                 printf("Raw mode selected.\n");
+                gState.rawOut = true;
                 break;
 
             case 'y':
                 printf("Compressing output...\n");
+                gState.compress = true;
                 break;
 
             default:
@@ -143,18 +246,107 @@ int main(int argc, char** argv) {
         }
     }
 
+    /* Check and set input file */
     if (argv[optind] == NULL) {
         printf("Mandatory argument 'input-file' missing\n");
         return EXIT_FAILURE;
+    } else {
+        printf("Using input file: %s\n", argv[optind]);
+        gState.inputFile = fopen(argv[optind], "rb"); // What if it doesn't exist?
     }
 
-    if (argc < 2) {
-        // TODO
-        printf("Usage: %s [] inputFile \n"
-               "Try %s --help for more information.\n",
-               argv[0], argv[0]);
-        return EXIT_FAILURE;
+    /**
+     * Set default output file.
+     * Have to do this since stdout is not constant.
+     */
+    if (gState.outputFile == NULL) {
+        gState.outputFile = stdout;
     }
+
+    /* Option interaction verification */
+    /**
+     * Check for:
+     *  C options passed in raw mode
+     *  bitGroupSize disagreeing with C type
+     */
+
+    if (gState.rawOut) {
+        if (gState.varName != NULL) {
+            printf("note: raw mode will not use var-name\n");
+        }
+        if (gState.CType != NULL) {
+            printf("note: raw mode will not use c-type\n");
+        }
+        if (gState.extraPrefix != NULL) {
+            printf("note: raw mode will not use extra-prefix\n");
+        }
+    }
+
+    /* Natural types by default */
+    if (gState.bitGroupSize == (TypeBitWidth)-1) {
+        switch (gState.pixelFormat) {
+            case TextureType_rgba32:
+                gState.bitGroupSize = TypeBitWidth_32;
+                break;
+
+            case TextureType_rgba16:
+            case TextureType_ia16:
+                gState.bitGroupSize = TypeBitWidth_16;
+                break;
+
+            case TextureType_i8:
+            case TextureType_ia8:
+            case TextureType_i4:
+            case TextureType_ia4:
+                gState.bitGroupSize = TypeBitWidth_8;
+                break;
+
+            default:
+                printf("error: unknown texture type specified\n");
+                return EXIT_FAILURE;
+        }
+    }
+
+    if (gState.CType != NULL) {
+        int size = 0;
+        if ((strcmp(gState.CType, "u64") == 0) && (gState.bitGroupSize != TypeBitWidth_64)) {
+            size = 64;
+        } else if ((strcmp(gState.CType, "u32") == 0) && (gState.bitGroupSize != TypeBitWidth_32)) {
+            size = 32;
+        } else if ((strcmp(gState.CType, "u16") == 0) && (gState.bitGroupSize != TypeBitWidth_16)) {
+            size = 16;
+        } else if ((strcmp(gState.CType, "u8") == 0) && (gState.bitGroupSize != TypeBitWidth_8)) {
+            size = 8;
+        }
+
+        if (size != 0) {
+            printf("warning: c-type '%s' does not match bit-group-size %d\n", gState.CType, 1 << ( gState.bitGroupSize + 3 ));
+        }
+    } else {
+        /* Set default C type */
+        switch (gState.bitGroupSize) {
+            case TypeBitWidth_64:
+                gState.CType = "u64";
+                break;
+
+            case TypeBitWidth_32:
+                gState.CType = "u32";
+                break;
+
+            case TypeBitWidth_16:
+                gState.CType = "u16";
+                break;
+
+            case TypeBitWidth_8:
+                gState.CType = "u8";
+                break;
+
+            default:
+                printf("error: unknown bit-group-size specified\n");
+                return EXIT_FAILURE;
+        }
+    }
+    
 
     return EXIT_SUCCESS;
     GenericBuffer genericBuf;
