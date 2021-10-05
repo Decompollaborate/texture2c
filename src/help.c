@@ -69,7 +69,7 @@ void PrintFlowAndIndent(const char* string, size_t initialColumn, size_t textWid
 
                 for (lookAhead = 0; lookAhead <= textWidth - column; lookAhead++) {
                     // printf("%c\n", src[index + lookAhead]);
-                    if (string[index + lookAhead + 1] == ' ') {
+                    if (string[index + lookAhead + 1] == ' ' || string[index + lookAhead + 1] == '\0') {
                         putchar(' ');
                         shouldBreak = 1;
                         break;
