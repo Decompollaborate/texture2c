@@ -336,6 +336,21 @@ uint8_t ImageBackend_GetIndexedPixel(const ImageBackend* image, size_t y, size_t
     return image->pixelMatrix[y][x];
 }
 
+RGBAPixel ImageBackend_GetPalettePixel(const ImageBackend* image, size_t index) {
+    assert(index < image->paletteLen);
+    assert(image->isColorIndexed);
+
+    RGBAPixel pixel;
+    RGBAPixel_Init(&pixel);
+
+    pixel.r = image->colorPalette[index].r;
+    pixel.g = image->colorPalette[index].g;
+    pixel.b = image->colorPalette[index].b;
+    pixel.a = image->alphaPalette[index];
+
+    return pixel;
+}
+
 void ImageBackend_SetRGBPixel(ImageBackend* image, size_t y, size_t x, uint8_t nR, uint8_t nG, uint8_t nB, uint8_t nA) {
     assert(image->hasImageData);
     assert(y < image->height);
@@ -415,14 +430,87 @@ void ImageBackend_SetPalette(ImageBackend* image, const ImageBackend* pal) {
     }
 }
 
-void ImageBackend_ConvertToColorIndexed(ImageBackend* image) {
+bool ImageBackend_ConvertToColorIndexed(ImageBackend* image) {
     assert(!image->isColorIndexed);
 
+    size_t bytePerPixel = ImageBackend_GetBytesPerPixel(image);
+    size_t paletteMax = 0;
 
-    assert(!"TODO");
+    // Create palette
+    for (size_t y = 0; y < image->height; y++) {
+        for (size_t x = 0; x < image->width; x++) {
+            RGBAPixel pixel;
+            RGBAPixel_Init(&pixel);
 
+            pixel.r = image->pixelMatrix[y][x * bytePerPixel + 0];
+            pixel.g = image->pixelMatrix[y][x * bytePerPixel + 1];
+            pixel.b = image->pixelMatrix[y][x * bytePerPixel + 2];
+            if (image->colorType == PNG_COLOR_TYPE_RGBA) {
+                pixel.a = image->pixelMatrix[y][x * bytePerPixel + 3];
+            }
+
+            bool wasColorPreviouslyAdded = false;
+            for (size_t i = 0; i < paletteMax; i++) {
+                RGBPixel* tempPixel = &image->colorPalette[i];
+
+                if (tempPixel->r == pixel.r && tempPixel->g == pixel.g && tempPixel->b == pixel.b) {
+                    if (image->alphaPalette[i] == pixel.a) {
+                        wasColorPreviouslyAdded = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!wasColorPreviouslyAdded) {
+                if (paletteMax >= ARRAY_COUNT(image->colorPalette)){
+                    return false;
+                }
+
+                image->colorPalette[paletteMax].r = pixel.r;
+                image->colorPalette[paletteMax].g = pixel.g;
+                image->colorPalette[paletteMax].b = pixel.b;
+                image->alphaPalette[paletteMax] = pixel.a;
+
+                paletteMax++;
+            }
+        }
+    }
+
+    // Palettize the pixel matrix
+    for (size_t y = 0; y < image->height; y++) {
+        for (size_t x = 0; x < image->width; x++) {
+            RGBAPixel pixel;
+            RGBAPixel_Init(&pixel);
+
+            pixel.r = image->pixelMatrix[y][x * bytePerPixel + 0];
+            pixel.g = image->pixelMatrix[y][x * bytePerPixel + 1];
+            pixel.b = image->pixelMatrix[y][x * bytePerPixel + 2];
+            if (image->colorType == PNG_COLOR_TYPE_RGBA) {
+                pixel.a = image->pixelMatrix[y][x * bytePerPixel + 3];
+            }
+
+            for (size_t i = 0; i < paletteMax; i++) {
+                RGBPixel* tempPixel = &image->colorPalette[i];
+
+                if (tempPixel->r == pixel.r && tempPixel->g == pixel.g && tempPixel->b == pixel.b) {
+                    if (image->alphaPalette[i] == pixel.a) {
+                        image->pixelMatrix[y][x * bytePerPixel + 0] = i;
+                        image->pixelMatrix[y][x * bytePerPixel + 1] = i;
+                        image->pixelMatrix[y][x * bytePerPixel + 2] = i;
+                        if (image->colorType == PNG_COLOR_TYPE_RGBA) {
+                            image->pixelMatrix[y][x * bytePerPixel + 3] = i;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    image->paletteLen = paletteMax;
 
     image->isColorIndexed = true;
+    return true;
 }
 
 double ImageBackend_GetBytesPerPixel(const ImageBackend* image) {

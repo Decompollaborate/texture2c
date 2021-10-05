@@ -53,6 +53,7 @@ void ImageBackend_InitEmptyPaletteImage(ImageBackend* image, uint32_t nWidth, ui
 
 RGBAPixel ImageBackend_GetPixel(const ImageBackend* image, size_t y, size_t x);
 uint8_t ImageBackend_GetIndexedPixel(const ImageBackend* image, size_t y, size_t x);
+RGBAPixel ImageBackend_GetPalettePixel(const ImageBackend* image, size_t index);
 
 void ImageBackend_SetRGBPixel(ImageBackend* image, size_t y, size_t x, uint8_t nR, uint8_t nG, uint8_t nB, uint8_t nA);
 void ImageBackend_SetGrayscalePixel(ImageBackend* image, size_t y, size_t x, uint8_t grayscale, uint8_t alpha);
@@ -61,7 +62,7 @@ void ImageBackend_SetIndexedPixel(ImageBackend* image, size_t y, size_t x, uint8
 void ImageBackend_SetPaletteIndex(ImageBackend* image, size_t index, uint8_t nR, uint8_t nG, uint8_t nB, uint8_t nA);
 void ImageBackend_SetPalette(ImageBackend* image, const ImageBackend* pal);
 
-void ImageBackend_ConvertToColorIndexed(ImageBackend* image);
+bool ImageBackend_ConvertToColorIndexed(ImageBackend* image);
 
 double ImageBackend_GetBytesPerPixel(const ImageBackend* image);
 

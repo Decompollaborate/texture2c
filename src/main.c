@@ -105,6 +105,16 @@ void ReadPng(GenericBuffer* buf, FILE* inFile, TextureType texType) {
 
     ImageBackend_ReadPng(&textureData, inFile);
 
+    if (gState.extractPalette) {
+        if (!textureData.isColorIndexed) {
+            bool converted = ImageBackend_ConvertToColorIndexed(&textureData);
+            if (!converted) {
+                fprintf(stderr, "Could not convert texture to color indexed format.\n");
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+
     PngTexture_CopyPng(buf, &textureData, texType);
 
     ImageBackend_Destroy(&textureData);
