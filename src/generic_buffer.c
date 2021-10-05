@@ -56,6 +56,10 @@ void GenericBuffer_WriteRaw(GenericBuffer* buffer, TypeBitWidth bitWidth, FILE* 
 
     size_t i;
     for (i = 0; i < buffer->bufferLength; i += step) {
+        if ((i / step) % elementsPerLine == 0) {
+            fprintf(outFile, "    ");
+        }
+
         switch (bitWidth) {
             case TypeBitWidth_64:
                 fprintf(outFile, "0x%016" PRIX64 ", ", ToUInt64BE(buffer->buffer, i));

@@ -21,7 +21,7 @@
 #include "jpeg_texture.h"
 
 /* Defines */
-#define OPTSRT "c:e:i:p:o:u:hlry"
+#define OPTSRT "c:e:i:p:o:u:v:hlry"
 
 typedef enum {
     FORMAT_PNG,
@@ -145,6 +145,25 @@ void ConstructLongOpts() {
     for (i = 0; i < optCount; i++) {
         longOptions[i] = optInfo[i].longOpt;
     }
+}
+
+void PrintVariablePre(FILE* outFile, const char* extraPrefix, const char* cType, const char* varName) {
+    assert(outFile != NULL);
+    assert(cType != NULL);
+    assert(varName != NULL);
+
+    if (gState.extraPrefix != NULL) {
+        fprintf(outFile, "%s ", extraPrefix);
+    }
+
+    assert(gState.varName != NULL);
+    fprintf(outFile, "%s %s[] = {\n", cType, varName);
+}
+
+void PrintVariablePost(FILE* outFile) {
+    assert(outFile != NULL);
+
+    fprintf(outFile, "};\n");
 }
 
 int main(int argc, char** argv) {
@@ -366,11 +385,16 @@ int main(int argc, char** argv) {
     }
 
     assert(gState.outputFile != NULL);
-    //if (gState.rawOut) {
-        GenericBuffer_WriteRaw(&genericBuf, gState.bitGroupSize, gState.outputFile);
-    //} else {
-        // TODO
-    //}
+
+    if (!gState.rawOut) {
+        PrintVariablePre(gState.outputFile, gState.extraPrefix, gState.CType, gState.varName);
+    }
+
+    GenericBuffer_WriteRaw(&genericBuf, gState.bitGroupSize, gState.outputFile);
+
+    if (!gState.rawOut) {
+        PrintVariablePost(gState.outputFile);
+    }
 
     GenericBuffer_Destroy(&genericBuf);
 
