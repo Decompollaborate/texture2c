@@ -1,7 +1,8 @@
 #pragma once
 
 /* C macros */
-#define ARRAY_COUNT(arr) (sizeof(arr) / sizeof(arr[0]))
+#define ARRAY_COUNT(arr) (signed long long)(sizeof(arr) / sizeof(arr[0]))
+#define ARRAY_COUNTU(arr) (unsigned long long)(sizeof(arr) / sizeof(arr[0]))
 
 /* Mathematical macros */
 #define CLAMP(x, min, max) ((x) < (min) ? (min) : (x) > (max) ? (max) : (x))

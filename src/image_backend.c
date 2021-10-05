@@ -4,14 +4,16 @@
 #include <string.h>
 #include <png.h>
 
+#include "macros.h"
+
 /* ImageBackend */
 
 void ImageBackend_Init(ImageBackend* image) {
     image->pixelMatrix = NULL;
 
-    image->colorPalette = NULL;
-    image->alphaPalette = NULL;
-    image->paletteSize = 16 * 16;
+    memset(image->colorPalette, 0, ARRAY_COUNT(image->colorPalette));
+    memset(image->alphaPalette, 0, ARRAY_COUNT(image->alphaPalette));
+    image->paletteLen = ARRAY_COUNT(image->colorPalette);
 
     image->width = 0;
     image->height = 0;
@@ -102,10 +104,9 @@ void ImageBackend_ReadPng(ImageBackend* image, FILE* inFile) {
         png_color* colorPaletteTemp;
 
         png_get_PLTE(png, info, &colorPaletteTemp, &paletteSizeTemp);
-        assert(paletteSizeTemp <= 256);
-        image->paletteSize = paletteSizeTemp;
+        assert(paletteSizeTemp <= ARRAY_COUNT(image->colorPalette));
+        image->paletteLen = paletteSizeTemp;
 
-        image->colorPalette = malloc(paletteSizeTemp * sizeof(png_color));
         memcpy(image->colorPalette, colorPaletteTemp, paletteSizeTemp);
 
 #ifdef TEXTURE_DEBUG
@@ -123,8 +124,8 @@ void ImageBackend_ReadPng(ImageBackend* image, FILE* inFile) {
 
         png_byte* alphaPaletteTemp;
         png_get_tRNS(png, info, &alphaPaletteTemp, &paletteSizeTemp, NULL);
+        assert(paletteSizeTemp <= ARRAY_COUNT(image->alphaPalette));
 
-        image->alphaPalette = malloc(paletteSizeTemp);
         memcpy(image->alphaPalette, alphaPaletteTemp, paletteSizeTemp);
 
 #ifdef TEXTURE_DEBUG
@@ -226,7 +227,7 @@ void ImageBackend_WritePng(ImageBackend* image, FILE* outFile) {
                  PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
     if (image->isColorIndexed) {
-        png_set_PLTE(png, info, (png_color*)image->colorPalette, image->paletteSize);
+        png_set_PLTE(png, info, (png_color*)image->colorPalette, image->paletteLen);
 
 #ifdef TEXTURE_DEBUG
         printf("palette\n");
@@ -239,7 +240,7 @@ void ImageBackend_WritePng(ImageBackend* image, FILE* outFile) {
         printf("\n");
 #endif
 
-        png_set_tRNS(png, info, image->alphaPalette, image->paletteSize, NULL);
+        png_set_tRNS(png, info, image->alphaPalette, image->paletteLen, NULL);
     }
 
     png_write_info(png, info);
@@ -302,8 +303,8 @@ void ImageBackend_InitEmptyPaletteImage(ImageBackend* image, uint32_t nWidth, ui
     for (size_t y = 0; y < image->height; y++) {
         image->pixelMatrix[y] = (uint8_t*)calloc(image->width * bytePerPixel, sizeof(uint8_t*));
     }
-    image->colorPalette = calloc(image->paletteSize, sizeof(png_color));
-    image->alphaPalette = (uint8_t*)calloc(image->paletteSize, sizeof(uint8_t));
+    memset(image->colorPalette, 0, ARRAY_COUNT(image->colorPalette));
+    memset(image->alphaPalette, 0, ARRAY_COUNT(image->alphaPalette));
 
     image->hasImageData = true;
     image->isColorIndexed = true;
@@ -370,7 +371,7 @@ void ImageBackend_SetIndexedPixel(ImageBackend* image, size_t y, size_t x, uint8
     size_t bytePerPixel = ImageBackend_GetBytesPerPixel(image);
     image->pixelMatrix[y][x * bytePerPixel + 0] = index;
 
-    assert(index < image->paletteSize);
+    assert(index < image->paletteLen);
     png_color* pal = (png_color*)image->colorPalette;
     pal[index].red = grayscale;
     pal[index].green = grayscale;
@@ -380,7 +381,7 @@ void ImageBackend_SetIndexedPixel(ImageBackend* image, size_t y, size_t x, uint8
 
 void ImageBackend_SetPaletteIndex(ImageBackend* image, size_t index, uint8_t nR, uint8_t nG, uint8_t nB, uint8_t nA) {
     assert(image->isColorIndexed);
-    assert(index < image->paletteSize);
+    assert(index < image->paletteLen);
 
     png_color* pal = (png_color*)image->colorPalette;
     pal[index].red = nR;
@@ -396,7 +397,7 @@ void ImageBackend_SetPalette(ImageBackend* image, const ImageBackend* pal) {
     for (size_t y = 0; y < pal->height; y++) {
         for (size_t x = 0; x < pal->width; x++) {
             size_t index = y * pal->width + x;
-            if (index >= image->paletteSize) {
+            if (index >= image->paletteLen) {
                 /*
                  * Some TLUTs are bigger than 256 colors.
                  * For those cases, we will only take the first 256
@@ -412,6 +413,16 @@ void ImageBackend_SetPalette(ImageBackend* image, const ImageBackend* pal) {
             ImageBackend_SetPaletteIndex(image, index, r, g, b, a);
         }
     }
+}
+
+void ImageBackend_ConvertToColorIndexed(ImageBackend* image) {
+    assert(!image->isColorIndexed);
+
+
+    assert(!"TODO");
+
+
+    image->isColorIndexed = true;
 }
 
 double ImageBackend_GetBytesPerPixel(const ImageBackend* image) {
@@ -445,10 +456,6 @@ void ImageBackend_FreeImageData(ImageBackend* image) {
     }
 
     if (image->isColorIndexed) {
-        free(image->colorPalette);
-        free(image->alphaPalette);
-        image->colorPalette = NULL;
-        image->alphaPalette = NULL;
         image->isColorIndexed = false;
     }
 
