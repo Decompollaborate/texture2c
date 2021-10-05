@@ -192,6 +192,40 @@ void PngTexture_CopyPng(GenericBuffer *dst, const ImageBackend *textureData, Tex
     dst->hasData = true;
 }
 
+void PngTexture_CopyPalette(GenericBuffer *dst, const ImageBackend *textureData) {
+    assert(dst != NULL);
+    assert(textureData != NULL);
+    // TODO?
+    assert(!dst->hasData);
+
+    dst->bufferSize = textureData->paletteLen * 2;
+    dst->bufferLength = dst->bufferSize;
+    dst->buffer = calloc(dst->bufferSize, sizeof(uint8_t));
+
+
+
+    size_t paletteLen = textureData->paletteLen;
+
+    for (uint16_t i = 0; i < paletteLen; i++) {
+        size_t pos = i * 2;
+        RGBAPixel pixel = ImageBackend_GetPalettePixel(textureData, i);
+
+        uint8_t r = pixel.r / 8;
+        uint8_t g = pixel.g / 8;
+        uint8_t b = pixel.b / 8;
+
+        uint8_t alphaBit = pixel.a != 0;
+
+        uint16_t data = (r << 11) + (g << 6) + (b << 1) + alphaBit;
+
+        dst->buffer[pos + 0] = (data & 0xFF00) >> 8;
+        dst->buffer[pos + 1] = (data & 0x00FF);
+    }
+
+
+    dst->hasData = true;
+}
+
 uint32_t PngTexture_BitsPerPixel(TextureType texType) {
     switch (texType) {
         case TextureType_rgba32:

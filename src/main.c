@@ -99,13 +99,13 @@ char* BadDictReverseLookup(char* dest, int eNum, const PoorMansDict* dict) {
     return NULL;
 }
 
-void ReadPng(GenericBuffer* buf, FILE* inFile, TextureType texType) {
+void ReadPng(GenericBuffer* buf, GenericBuffer* paletteBuf, FILE* inFile, TextureType texType, bool extractPalette) {
     ImageBackend textureData;
     ImageBackend_Init(&textureData);
 
     ImageBackend_ReadPng(&textureData, inFile);
 
-    if (gState.extractPalette) {
+    if (extractPalette) {
         if (!textureData.isColorIndexed) {
             bool converted = ImageBackend_ConvertToColorIndexed(&textureData);
             if (!converted) {
@@ -113,6 +113,9 @@ void ReadPng(GenericBuffer* buf, FILE* inFile, TextureType texType) {
                 exit(EXIT_FAILURE);
             }
         }
+
+
+        PngTexture_CopyPalette(paletteBuf, &textureData);
     }
 
     PngTexture_CopyPng(buf, &textureData, texType);
@@ -376,9 +379,12 @@ int main(int argc, char** argv) {
     GenericBuffer genericBuf;
     GenericBuffer_Init(&genericBuf);
 
+    GenericBuffer paletteBuf;
+    GenericBuffer_Init(&paletteBuf);
+
     switch (gState.inputFileFormat) {
         case FORMAT_PNG:
-            ReadPng(&genericBuf, gState.inputFile, gState.pixelFormat);
+            ReadPng(&genericBuf, &paletteBuf, gState.inputFile, gState.pixelFormat, gState.extractPalette);
             break;
 
         case FORMAT_JPEG:
@@ -406,6 +412,12 @@ int main(int argc, char** argv) {
         PrintVariablePost(gState.outputFile);
     }
 
+    // TODO
+    if (paletteBuf.hasData) {
+        GenericBuffer_WriteRaw(&paletteBuf, TypeBitWidth_16, stdout);
+    }
+
+    GenericBuffer_Destroy(&paletteBuf);
     GenericBuffer_Destroy(&genericBuf);
 
     if (gState.inputFile != stdin) {
