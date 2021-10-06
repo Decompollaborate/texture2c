@@ -11,8 +11,6 @@
 #include <stdint.h>
 // #include <stdlib.h>
 
-#define ABS(x) ((x) < 0 ? -(x) : (x))
-
 typedef struct {
     /* 0x0 */ char bfType[2];      /* The characters "BM" */
     /* 0x4 */ int32_t bfSize;      /* The size of the file in bytes */

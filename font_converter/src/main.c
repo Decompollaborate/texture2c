@@ -1,15 +1,42 @@
 /**
- * Plan:
- * raw data -> bit arrays (4)
+ * Plan is to support conversion between
+ * In:
+ * - raw data file
+ * - 4 BMP files
+ * - 4 PNG files
+ * - 4 XBM files
+ * - folder of BMPs/PNGs/XBM (maybe from spec)
+ *
+ * Out:
+ * - all input formats,
+ * - comma-separated bytes for inclusion in C file, with or without array wrapper.
+ *
+ * Currently supported:
+ * In: raw data, single BMP
+ * Out: single BMP
+ *
+ *
  */
 
+/**
+ * Plan:
+ * raw data -> bit arrays (4) -> BMP (4)
+ * BMP (4) -> bit arrays (4)
+ */
+
+#define _GNU_SOURCE
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 // #include <inttypes.h>
+#include <getopt.h>
 
 #include "bmp.h"
+#include "help.h"
+#include "macros.h"
+#include "mkdir.h"
 
 /* Defines, may replace some with args later */
 
@@ -57,7 +84,39 @@ uint8_t* SetBitArray(uint8_t* array, uint8_t* fileBuffer, size_t count, int pale
     return array;
 }
 
+/* Options */
+#define OPTSTR "l:o:s:h"
+#define USAGE_FMT ""
+
+// clang-format off
+static OptInfo optInfo[] = {
+    { { "read-length", required_argument, NULL, 'l' }, "0xNUM", "Read NUM bytes from file. NUM can be given as 0xHEX or DEC. If not specified, read entire file" },
+    { { "output-path", required_argument, NULL, 'o' }, "FILE", "Write output to FILE, or stdout if not specified" },
+    { { "read-start", required_argument, NULL, 's' }, "0xNUM", "Start reading at offset 0xNUM" },
+
+    { { "help", no_argument, NULL, 'h' }, NULL, "Display this message and exit" },
+
+    { { NULL, 0, NULL, 0 }, NULL, NULL },
+};
+// clang-format on
+
+static size_t optCount = ARRAY_COUNT(optInfo);
+static struct option longOptions[ARRAY_COUNT(optInfo)];
+
+void ConstructLongOpts() {
+    size_t i;
+
+    for (i = 0; i < optCount; i++) {
+        longOptions[i] = optInfo[i].longOpt;
+    }
+}
+
 int main(int argc, char** argv) {
+    int opt;
+
+    size_t readStart = 0;
+    size_t readLength = 0;
+
     int palettes[PALETTE_MAX];
     FILE* inputFile;
     size_t fileLength;
@@ -67,6 +126,8 @@ int main(int argc, char** argv) {
     size_t i;
     uint8_t* bitArrays[PALETTE_MAX];
 
+    ConstructLongOpts();
+
     /* Process command line */
 
     if (argc < 2) {
@@ -74,7 +135,49 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    inputFile = fopen(argv[1], "rb");
+    while (true) {
+        int optionIndex = 0;
+
+        if ((opt = getopt_long(argc, argv, OPTSTR, longOptions, &optionIndex)) == -1) {
+            break;
+        }
+
+        switch (opt) {
+            case 'l':
+                if (!sscanf(optarg, "0x%lX", &readLength) && !sscanf(optarg, "%ld", &readLength)) {
+                    fprintf(stderr,
+                            "warning: %s is not a valid argument for -s: it should be hex starting with '0x' or dec. "
+                            "Defaulting to 0\n",
+                            optarg);
+                }
+                printf("Will read 0x%lX bytes\n", readLength);
+                break;
+
+            case 'o':
+                printf("Passed argument '-o %s', but output files are not yet enabled.", optarg);
+                break;
+
+            case 's':
+                if (!sscanf(optarg, "0x%lX", &readStart) && !sscanf(optarg, "%ld", &readStart)) {
+                    fprintf(stderr,
+                            "warning: %s is not a valid argument for -s: it should be hex starting with '0x' or dec. "
+                            "Defaulting to 0\n",
+                            optarg);
+                }
+                printf("Start reading at: 0x%lX\n", readStart);
+                break;
+
+            case 'h':
+                PrintHelp(optCount, optInfo);
+                return EXIT_FAILURE;
+
+            default:
+                printf("?? getopt returned character code 0%o ??\n", opt);
+                break;
+        }
+    }
+
+    inputFile = fopen(argv[optind], "rb");
 
     if (inputFile == NULL) {
         return EXIT_FAILURE;
@@ -125,22 +228,126 @@ int main(int argc, char** argv) {
 
 #undef ROW_MAX
 #define ROW_MAX 32
-    WriteBMPFile(outputFile, bitArrays[0], CHARACTERS_PER_ROW * CHARACTER_WIDTH, ROW_MAX * CHARACTER_HEIGHT);
-    // printf("\n");
+    {
+        char* outputPath = "test";
+        char outputFileNames[4][30]; // TODO: do not hardcode these, malloc them or something
+        FILE* outputFiles[4];
+        char outputFileListName[30];
+        FILE* outputFileList;
+        int layer;
+
+        sprintf(outputFileListName, "%s/filelist.txt", outputPath);
+        outputFileList = fopen_mkdir(outputFileListName, "wa");
+        for (layer = 0; layer < 4; layer++) {
+            // printf("A\n");
+            // printf("B\n");
+            sprintf(outputFileNames[layer], "%s/layer_%d.bmp", outputPath, layer);
+            fprintf(outputFileList,"%s\n", outputFileNames[layer]);
+            printf("%s/layer_%d.bmp\n", outputPath, layer);
+            outputFiles[layer] = fopen_mkdir(outputFileNames[layer], "wb");
+            printf("Writing to %s\n", outputFileNames[layer]);
+            WriteBMPFile(outputFiles[layer], bitArrays[layer], CHARACTERS_PER_ROW * CHARACTER_WIDTH,
+                         ROW_MAX * CHARACTER_HEIGHT);
+            fclose(outputFiles[layer]);
+        }
+
+        // printf("\n");
+    }
 #endif
+
+    // #if 0
 
     {
         BMPFile file;
         uint8_t* pixelsArray;
+        size_t pixelsArraySize;
+        size_t currentByte;
+        uint8_t* binaryArray;
+        FILE* fileList = fopen("test/filelist.txt", "r");
+        char* line = NULL;
+        size_t len = 0;
+        ssize_t read;
+        FILE* currentInputFile;
+        int layer = 0;
 
-        ReadBMPHeaders(&file, inputFile);
-        if (CheckBMP(&file)) {
-            printf("Malloc array size: %d\n", file.imageHeader.biWidth * ABS(file.imageHeader.biHeight));
-            pixelsArray = malloc(file.imageHeader.biWidth * ABS(file.imageHeader.biHeight) * sizeof(uint8_t));
-            ExtractBMPPixels(pixelsArray, &file, inputFile);
-            free(pixelsArray);
+        while ((read = getline(&line, &len, fileList)) != -1) {
+            int c;
+            for (c = 0; line[c] != '\0'; c++) {
+                if (line[c] == '\n') {
+                    line[c] = '\0';
+                }
+            }
+
+            // printf("Retrieved line of length %zu:\n", read);
+            // printf("%s", line);
+            // printf("\n");
+            currentInputFile = fopen(line, "rb");
+            ReadBMPHeaders(&file, currentInputFile);
+
+            // printf("Width: %d Height: %d\n", file.imageHeader.biWidth, file.imageHeader.biHeight);
+
+            if (!CheckBMP(&file)) {
+                return EXIT_FAILURE;
+            }
+            pixelsArraySize = file.imageHeader.biWidth * ABS(file.imageHeader.biHeight);
+            // printf("Malloc array size: %zu\n\n", pixelsArraySize);
+            pixelsArray = malloc(pixelsArraySize * sizeof(uint8_t));
+            memset(pixelsArray, 0, pixelsArraySize);
+            ExtractBMPPixels(pixelsArray, &file, currentInputFile);
+
+            // printf("Binary array size: 0x%zX\n", pixelsArraySize / 2);
+            assert(pixelsArraySize % 2 == 0);
+
+            if (layer == 0) {
+                binaryArray = malloc(pixelsArraySize / 2 * sizeof(uint8_t));
+                memset(binaryArray, 0, pixelsArraySize / 2);
+            }
+
+            for (currentByte = 0; currentByte < pixelsArraySize / 2; currentByte++) {
+                binaryArray[currentByte] |=
+                    (pixelsArray[2 * currentByte] << (4 + layer)) | (pixelsArray[2 * currentByte + 1] << layer);
+            }
+
+            // printf("\nFile written\n");
+            fclose(currentInputFile);
+            layer++;
         }
+        fwrite(binaryArray, pixelsArraySize / 2, 1, outputFile);
+        free(pixelsArray);
+        free(binaryArray);
+        fclose(fileList);
+        if (line) {
+            free(line);
+        }
+
+        // ReadBMPHeaders(&file, inputFile);
+        // if (!CheckBMP(&file)) {
+        //     return EXIT_FAILURE;
+        // }
+        // pixelsArraySize = file.imageHeader.biWidth * ABS(file.imageHeader.biHeight);
+        // // printf("Malloc array size: %zu\n\n", pixelsArraySize);
+        // pixelsArray = malloc(pixelsArraySize * sizeof(uint8_t));
+        // memset(pixelsArray, 0, pixelsArraySize);
+        // ExtractBMPPixels(pixelsArray, &file, inputFile);
+
+        // // printf("Binary array size: 0x%zX\n", pixelsArraySize / 2);
+        // assert(pixelsArraySize % 2 == 0);
+
+        // binaryArray = malloc(pixelsArraySize / 2 * sizeof(uint8_t));
+        // memset(binaryArray, 0, pixelsArraySize / 2);
+
+        // for (currentByte = 0; currentByte < pixelsArraySize / 2; currentByte++) {
+        //     binaryArray[currentByte] |= (pixelsArray[2 * currentByte] << 4) | (pixelsArray[2 * currentByte + 1]);
+        // }
+
+        // fwrite(binaryArray, pixelsArraySize / 2, 1, outputFile);
+        // // printf("\nFile written\n");
+
+        // free(pixelsArray);
+        // fclose(fileList);
     }
+
+    // #endif
 
 #if 0
 

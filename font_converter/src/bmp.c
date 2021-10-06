@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "macros.h"
 
 BMPFileHeader defaultBMPFileHeader = { "BM", -1, 0, 0, -1 };
 
@@ -82,7 +83,7 @@ void ReadBMPHeaders(BMPFile* out, FILE* srcBMP) {
 
     fread(&out->imageHeader, IMAGE_HEADER_SIZE, 1, srcBMP);
 
-    printf("End process headers\n");
+    // printf("End process headers\n");
 }
 
 bool CheckBMP(BMPFile* file) {
@@ -159,17 +160,15 @@ void ExtractBMPPixels(uint8_t* pixelsArrayOut, BMPFile* inputFile, FILE* src) {
     bytesPerRow = width / 8 + !!(width & 7);
     padding = (-width / 8) & 3;
 
-
-
-    printf("Malloc for palette\n");
+    // printf("Malloc for palette\n");
     inputFile->palette = malloc(8 * sizeof(uint8_t));
     fread(inputFile->palette, 8, 1, src);
-    printf("Finish reading input palette\n");
+    // printf("Finish reading input palette\n");
 
-    printf("Malloc for pixels\n");
+    // printf("Malloc for pixels\n");
     inputFile->pixels = malloc(pixelsSize * sizeof(uint8_t));
     fread(inputFile->pixels, pixelsSize, 1, src);
-    printf("Finish reading input pixels\n");
+    // printf("Finish reading input pixels\n");
 
     {
         size_t row;
@@ -178,9 +177,9 @@ void ExtractBMPPixels(uint8_t* pixelsArrayOut, BMPFile* inputFile, FILE* src) {
             for (column = 0; column < width; column++) {
                 pixelsArrayOut[width * row + column] =
                     (inputFile->pixels[(bytesPerRow + padding) * row + (column / 8)] >> (7 - (column & 7))) & 1;
-                printf("%s", (pixelsArrayOut[width * row + column] ? "\x1b[30;47m1,\x1b[0m" : "0," ));
+                // printf("%s", (pixelsArrayOut[width * row + column] ? "\x1b[30;47m1,\x1b[0m" : "0,"));
             }
-            printf("\n");
+            // printf("\n");
         }
     }
 
