@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-// #include <inttypes.h>
+#include <inttypes.h>
 #include <getopt.h>
 
 #include "bmp.h"
@@ -84,17 +84,62 @@ uint8_t* SetBitArray(uint8_t* array, uint8_t* fileBuffer, size_t count, int pale
     return array;
 }
 
+/* For writing a C file */
+void WriteDefinitionHead(FILE* file, const char* extraPrefix, const char* cType, const char* varName) {
+    assert(file != NULL);
+    assert(cType != NULL);
+    assert(varName != NULL);
+
+    if (extraPrefix != NULL) {
+        fprintf(file, "%s ", extraPrefix);
+    }
+
+    fprintf(file, "%s %s[] = {\n", cType, varName);
+}
+
+#define ARRAY_WIDTH 16
+void WriteDefinitionBody(FILE* file, uint8_t* bodyArray, size_t size) {
+    size_t currentByte;
+    const char* indent = "   ";
+
+    fprintf(file, "%s", indent);
+
+    for (currentByte = 0; currentByte < size; currentByte++) {
+        if (currentByte % ARRAY_WIDTH == 0) {
+            fprintf("%s", indent);
+        }
+        fprintf(" 0x%" PRIX8 ",", bodyArray[currentByte]);
+        if ((currentByte + 1 % ARRAY_WIDTH) == 0) {
+            fputs(file, "");
+        }
+    }
+
+    if ((currentByte + 1 % ARRAY_WIDTH) != 0) {
+        fputs(file, "");
+    }
+}
+
+void WriteDefinitionTail(FILE* file) {
+    assert(file != NULL);
+    fputs(file, "\n};");
+}
+
 /* Options */
-#define OPTSTR "l:o:s:h"
+#define OPTSTR "I:L:O:l:i:o:s:hr"
 #define USAGE_FMT ""
 
 // clang-format off
 static OptInfo optInfo[] = {
+    { { "input-mode", required_argument, NULL, 'I' }, "TYPE", "type of input file: one of B(inary), (Bit)M(ap images), C( file)" },
+    { { "input-list", required_argument, NULL, 'L' }, "LIST", "For conversion of multiple files, pass the path of a list file" },
+    { { "output-mode", required_argument, NULL, 'O' }, "TYPE", "type of output file: one of B(inary), (Bit)M(ap images), C( file)" },
+    { { "input-path", required_argument, NULL, 'i' }, "FILE", "Read input from a single FILE, for B or C modes" },
     { { "read-length", required_argument, NULL, 'l' }, "0xNUM", "Read NUM bytes from file. NUM can be given as 0xHEX or DEC. If not specified, read entire file" },
-    { { "output-path", required_argument, NULL, 'o' }, "FILE", "Write output to FILE, or stdout if not specified" },
+    { { "output-path", required_argument, NULL, 'o' }, "FILE", "Write output to FILE, or stdout if not specified. In B mode, specifies a directory" },
     { { "read-start", required_argument, NULL, 's' }, "0xNUM", "Start reading at offset 0xNUM" },
 
     { { "help", no_argument, NULL, 'h' }, NULL, "Display this message and exit" },
+    { { "raw-mode", no_argument, NULL, 'r' }, NULL, "Raw mode: in C output, print only array body, not head and tail" },
 
     { { NULL, 0, NULL, 0 }, NULL, NULL },
 };
@@ -126,6 +171,12 @@ int main(int argc, char** argv) {
     size_t i;
     uint8_t* bitArrays[PALETTE_MAX];
 
+    char inputMode = '\0';
+    char outputMode = '\0';
+    char overflow = '\0';
+
+    FILE* inputFileList;
+
     ConstructLongOpts();
 
     /* Process command line */
@@ -143,6 +194,33 @@ int main(int argc, char** argv) {
         }
 
         switch (opt) {
+            case 'I':
+                sscanf(optarg, "%c%c", &inputMode, &overflow);
+                if (overflow != '\0' || inputMode != 'B' || inputMode != 'M' || inputMode != 'C') {
+                    fprintf(stderr, "error: '%s' is not a valid input mode: should be one of B, M, C", optarg);
+                    return EXIT_FAILURE;
+                }
+                printf("Using input mode: %c", inputMode);
+                break;
+
+            case 'L':
+                fopen(inputFileList, 'r');
+                printf("Using input list: %s", inputFileList);
+                break;
+
+            case 'O':
+                sscanf(optarg, "%c%c", &outputMode, &overflow);
+                if (overflow != '\0' || inputMode != 'B' || inputMode != 'M' || inputMode != 'C') {
+                    fprintf(stderr, "error: '%s' is not a valid output mode: should be one of B, M, C", optarg);
+                    return EXIT_FAILURE;
+                }
+                printf("Using output mode: %c", inputMode);
+                break;
+
+            case 'i':
+                printf("Passed argument '-i %s', but input files are not yet enabled.", optarg);
+                break;
+
             case 'l':
                 if (!sscanf(optarg, "0x%lX", &readLength) && !sscanf(optarg, "%ld", &readLength)) {
                     fprintf(stderr,
@@ -230,26 +308,36 @@ int main(int argc, char** argv) {
 #define ROW_MAX 32
     {
         char* outputPath = "test";
-        char outputFileNames[4][30]; // TODO: do not hardcode these, malloc them or something
+        char* outputFileNames[4]; // [30]; // TODO: do not hardcode these, malloc them or something
         FILE* outputFiles[4];
-        char outputFileListName[30];
+        char outputFileListName; // [30];
         FILE* outputFileList;
         int layer;
+        ssize_t stringLength = snprintf(NULL, 0, "%s/filelist.txt", outputPath) + 1;
+        ssize_t outputFileNamesLength;
 
+        outputFileListName = malloc(stringLength * sizeof(char));
         sprintf(outputFileListName, "%s/filelist.txt", outputPath);
+        free(outputFileListName);
+
         outputFileList = fopen_mkdir(outputFileListName, "wa");
         for (layer = 0; layer < 4; layer++) {
-            // printf("A\n");
-            // printf("B\n");
+            stringLength = snprintf(NULL, "%s/layer_%d.bmp", outputPath, layer) + 1;
+            outputFileNames[layer] = malloc(stringLength * sizeof(char));
             sprintf(outputFileNames[layer], "%s/layer_%d.bmp", outputPath, layer);
+
             fprintf(outputFileList,"%s\n", outputFileNames[layer]);
             printf("%s/layer_%d.bmp\n", outputPath, layer);
             outputFiles[layer] = fopen_mkdir(outputFileNames[layer], "wb");
             printf("Writing to %s\n", outputFileNames[layer]);
+
             WriteBMPFile(outputFiles[layer], bitArrays[layer], CHARACTERS_PER_ROW * CHARACTER_WIDTH,
                          ROW_MAX * CHARACTER_HEIGHT);
+
+            free(outputFileNames[layer]);
             fclose(outputFiles[layer]);
         }
+        fclose(outputFileList);
 
         // printf("\n");
     }
@@ -312,6 +400,7 @@ int main(int argc, char** argv) {
             fclose(currentInputFile);
             layer++;
         }
+
         fwrite(binaryArray, pixelsArraySize / 2, 1, outputFile);
         free(pixelsArray);
         free(binaryArray);
