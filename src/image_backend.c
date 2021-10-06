@@ -445,6 +445,7 @@ bool ImageBackend_ConvertToColorIndexed(ImageBackend* image) {
             pixel.r = image->pixelMatrix[y][x * bytePerPixel + 0];
             pixel.g = image->pixelMatrix[y][x * bytePerPixel + 1];
             pixel.b = image->pixelMatrix[y][x * bytePerPixel + 2];
+            pixel.a = 255;
             if (image->colorType == PNG_COLOR_TYPE_RGBA) {
                 pixel.a = image->pixelMatrix[y][x * bytePerPixel + 3];
             }
@@ -485,6 +486,7 @@ bool ImageBackend_ConvertToColorIndexed(ImageBackend* image) {
             pixel.r = image->pixelMatrix[y][x * bytePerPixel + 0];
             pixel.g = image->pixelMatrix[y][x * bytePerPixel + 1];
             pixel.b = image->pixelMatrix[y][x * bytePerPixel + 2];
+            pixel.a = 255;
             if (image->colorType == PNG_COLOR_TYPE_RGBA) {
                 pixel.a = image->pixelMatrix[y][x * bytePerPixel + 3];
             }
@@ -494,12 +496,13 @@ bool ImageBackend_ConvertToColorIndexed(ImageBackend* image) {
 
                 if (tempPixel->r == pixel.r && tempPixel->g == pixel.g && tempPixel->b == pixel.b) {
                     if (image->alphaPalette[i] == pixel.a) {
-                        image->pixelMatrix[y][x * bytePerPixel + 0] = i;
-                        image->pixelMatrix[y][x * bytePerPixel + 1] = i;
-                        image->pixelMatrix[y][x * bytePerPixel + 2] = i;
-                        if (image->colorType == PNG_COLOR_TYPE_RGBA) {
-                            image->pixelMatrix[y][x * bytePerPixel + 3] = i;
-                        }
+                        //image->pixelMatrix[y][x * bytePerPixel + 0] = i;
+                        //image->pixelMatrix[y][x * bytePerPixel + 1] = i;
+                        //image->pixelMatrix[y][x * bytePerPixel + 2] = i;
+                        //if (image->colorType == PNG_COLOR_TYPE_RGBA) {
+                        //    image->pixelMatrix[y][x * bytePerPixel + 3] = i;
+                        //}
+                        image->pixelMatrix[y][x] = i;
                         break;
                     }
                 }
@@ -510,6 +513,8 @@ bool ImageBackend_ConvertToColorIndexed(ImageBackend* image) {
     image->paletteLen = paletteMax;
 
     image->isColorIndexed = true;
+    image->colorType = PNG_COLOR_TYPE_PALETTE;
+    image->bitDepth = 8;
     return true;
 }
 

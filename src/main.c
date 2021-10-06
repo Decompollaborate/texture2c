@@ -107,6 +107,7 @@ void ReadPng(GenericBuffer* buf, GenericBuffer* paletteBuf, FILE* inFile, Textur
 
     if (extractPalette) {
         if (!textureData.isColorIndexed) {
+            //printf("converting!\n");
             bool converted = ImageBackend_ConvertToColorIndexed(&textureData);
             if (!converted) {
                 fprintf(stderr, "Could not convert texture to color indexed format.\n");
@@ -114,8 +115,8 @@ void ReadPng(GenericBuffer* buf, GenericBuffer* paletteBuf, FILE* inFile, Textur
             }
         }
 
-
         PngTexture_CopyPalette(paletteBuf, &textureData);
+        texType = TextureType_ci8;
     }
 
     PngTexture_CopyPng(buf, &textureData, texType);
