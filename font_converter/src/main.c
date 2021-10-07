@@ -267,7 +267,7 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-#if 0
+    // #if 0
     /* Construct required variables */
 
     ConstructPalettes(palettes);
@@ -310,7 +310,7 @@ int main(int argc, char** argv) {
         char* outputPath = "test";
         char* outputFileNames[4]; // [30]; // TODO: do not hardcode these, malloc them or something
         FILE* outputFiles[4];
-        char outputFileListName; // [30];
+        char* outputFileListName; // [30];
         FILE* outputFileList;
         int layer;
         ssize_t stringLength = snprintf(NULL, 0, "%s/filelist.txt", outputPath) + 1;
@@ -322,11 +322,11 @@ int main(int argc, char** argv) {
 
         outputFileList = fopen_mkdir(outputFileListName, "wa");
         for (layer = 0; layer < 4; layer++) {
-            stringLength = snprintf(NULL, "%s/layer_%d.bmp", outputPath, layer) + 1;
+            stringLength = snprintf(NULL, 0, "%s/layer_%d.bmp", outputPath, layer) + 1;
             outputFileNames[layer] = malloc(stringLength * sizeof(char));
             sprintf(outputFileNames[layer], "%s/layer_%d.bmp", outputPath, layer);
 
-            fprintf(outputFileList,"%s\n", outputFileNames[layer]);
+            fprintf(outputFileList, "%s\n", outputFileNames[layer]);
             printf("%s/layer_%d.bmp\n", outputPath, layer);
             outputFiles[layer] = fopen_mkdir(outputFileNames[layer], "wb");
             printf("Writing to %s\n", outputFileNames[layer]);
@@ -341,9 +341,9 @@ int main(int argc, char** argv) {
 
         // printf("\n");
     }
-#endif
+    // #endif
 
-    // #if 0
+#if 0
 
     {
         BMPFile file;
@@ -436,7 +436,7 @@ int main(int argc, char** argv) {
         // fclose(fileList);
     }
 
-    // #endif
+#endif
 
 #if 0
 
