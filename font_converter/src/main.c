@@ -314,7 +314,6 @@ int main(int argc, char** argv) {
         FILE* outputFileList;
         int layer;
         ssize_t stringLength = snprintf(NULL, 0, "%s/filelist.txt", outputPath) + 1;
-        ssize_t outputFileNamesLength;
 
         outputFileListName = malloc(stringLength * sizeof(char));
         sprintf(outputFileListName, "%s/filelist.txt", outputPath);
