@@ -21,7 +21,7 @@
 #include "jpeg_texture.h"
 
 /* Defines */
-#define OPTSRT "c:e:i:p:o:u:v:hlry"
+#define OPTSRT "c:e:i:p:o:u:v:bhlry"
 
 typedef enum {
     FORMAT_PNG,
@@ -106,17 +106,37 @@ void ReadPng(GenericBuffer* buf, GenericBuffer* paletteBuf, FILE* inFile, Textur
     ImageBackend_ReadPng(&textureData, inFile);
 
     if (extractPalette) {
+        assert(texType == TextureType_ci8 || texType == TextureType_ci4);
+
         if (!textureData.isColorIndexed) {
             //printf("converting!\n");
             bool converted = ImageBackend_ConvertToColorIndexed(&textureData);
             if (!converted) {
-                fprintf(stderr, "Could not convert texture to color indexed format.\n");
+                fprintf(stderr, "Error: Could not convert texture to color indexed format.\n");
                 exit(EXIT_FAILURE);
             }
         }
 
         PngTexture_CopyPalette(paletteBuf, &textureData);
-        texType = TextureType_ci8;
+
+        switch (texType) {
+            case TextureType_ci8:
+                if (paletteBuf->bufferLength > 256) {
+                    fprintf(stderr, "Error: Palette too big, can't fit on CI8 (256 colors). Palette size: %zu.\n", paletteBuf->bufferLength);
+                    exit(EXIT_FAILURE);
+                }
+                break;
+
+            case TextureType_ci4:
+                if (paletteBuf->bufferLength > 16) {
+                    fprintf(stderr, "Error: Palette too big, can't fit on CI4 (16 colors). Palette size: %zu.\n", paletteBuf->bufferLength);
+                    exit(EXIT_FAILURE);
+                }
+                break;
+
+            default:
+                break;
+        }
     }
 
     PngTexture_CopyPng(buf, &textureData, texType);
@@ -178,6 +198,29 @@ void PrintVariablePost(FILE* outFile) {
     assert(outFile != NULL);
 
     fprintf(outFile, "};\n");
+}
+
+void CheckValidProgramArguments() {
+
+    if (!gState.rawOut) {
+        if (gState.varName == NULL) {
+            fprintf(stderr, "Error: Missing var-name\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+
+    if (gState.extractPalette) {
+        switch (gState.pixelFormat) {
+            case TextureType_ci4:
+            case TextureType_ci8:
+                break;
+
+            default:
+                fprintf(stderr, "Error: Can't combine extraction with selected pixel format\n");
+                exit(EXIT_FAILURE);
+        }
+    }
 }
 
 int main(int argc, char** argv) {
@@ -245,6 +288,7 @@ int main(int argc, char** argv) {
             /* Flags */
             case 'b':
                 gState.blobMode = true;
+                assert(!"Not implemented");
                 break;
 
             case 'h':
@@ -268,6 +312,7 @@ int main(int argc, char** argv) {
 
             default:
                 printf("?? getopt returned character code 0%o ??\n", opt);
+                exit(EXIT_FAILURE);
                 break;
         }
     }
@@ -375,6 +420,8 @@ int main(int argc, char** argv) {
         }
     }
 
+    CheckValidProgramArguments();
+
     assert(gState.inputFile != NULL);
 
     GenericBuffer genericBuf;
@@ -384,16 +431,14 @@ int main(int argc, char** argv) {
     GenericBuffer_Init(&paletteBuf);
 
     switch (gState.inputFileFormat) {
+        default:
+            printf("Assuming PNG...\n");
         case FORMAT_PNG:
             ReadPng(&genericBuf, &paletteBuf, gState.inputFile, gState.pixelFormat, gState.extractPalette);
             break;
 
         case FORMAT_JPEG:
             ReadJpeg(&genericBuf, gState.inputFile);
-            break;
-
-        default:
-            assert(!"Input format not implemented?");
             break;
     }
 
