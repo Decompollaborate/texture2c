@@ -106,22 +106,22 @@ void WriteDefinitionBody(FILE* file, uint8_t* bodyArray, size_t size) {
 
     for (currentByte = 0; currentByte < size; currentByte++) {
         if (currentByte % ARRAY_WIDTH == 0) {
-            fprintf("%s", indent);
+            fprintf(file, "%s", indent);
         }
-        fprintf(" 0x%" PRIX8 ",", bodyArray[currentByte]);
+        fprintf(file, " 0x%" PRIX8 ",", bodyArray[currentByte]);
         if ((currentByte + 1 % ARRAY_WIDTH) == 0) {
-            fputs(file, "");
+            fputs("", file);
         }
     }
 
     if ((currentByte + 1 % ARRAY_WIDTH) != 0) {
-        fputs(file, "");
+        fputs("", file);
     }
 }
 
 void WriteDefinitionTail(FILE* file) {
     assert(file != NULL);
-    fputs(file, "\n};");
+    fputs("\n};", file);
 }
 
 /* Options */
@@ -204,8 +204,8 @@ int main(int argc, char** argv) {
                 break;
 
             case 'L':
-                fopen(inputFileList, 'r');
-                printf("Using input list: %s", inputFileList);
+                inputFileList = fopen(optarg, "r");
+                printf("Using input list: %s", optarg);
                 break;
 
             case 'O':
