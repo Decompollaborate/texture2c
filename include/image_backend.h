@@ -27,8 +27,8 @@ typedef struct RGBPixel {
 typedef struct ImageBackend {
     uint8_t** pixelMatrix; // height * [width * bytePerPixel]
 
-    RGBPixel colorPalette[16 * 16];
-    uint8_t alphaPalette[16 * 16];
+    RGBPixel colorPalette[256];
+    uint8_t alphaPalette[256];
     size_t paletteLen;
 
     uint32_t width;
