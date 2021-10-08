@@ -317,9 +317,10 @@ int main(int argc, char** argv) {
 
         outputFileListName = malloc(stringLength * sizeof(char));
         sprintf(outputFileListName, "%s/filelist.txt", outputPath);
-        free(outputFileListName);
 
         outputFileList = fopen_mkdir(outputFileListName, "wa");
+        free(outputFileListName);
+
         for (layer = 0; layer < 4; layer++) {
             stringLength = snprintf(NULL, 0, "%s/layer_%d.bmp", outputPath, layer) + 1;
             outputFileNames[layer] = malloc(stringLength * sizeof(char));
@@ -477,7 +478,6 @@ int main(int argc, char** argv) {
         fclose(outputFile);
     }
 
-    free(palettes);
     for (i = 0; i < PALETTE_MAX; i++) {
         free(bitArrays[i]);
     }
