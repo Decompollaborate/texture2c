@@ -60,3 +60,4 @@ build/
 testing_textures/
 perf.data
 perf.data.old
+*.bin
