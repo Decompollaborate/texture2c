@@ -9,5 +9,5 @@
 
 void JpegTexture_ReadJpeg(GenericBuffer *dst, FILE* inFile, bool fillBuffer);
 
-void JpegTexture_CheckValidJpeg(GenericBuffer *dst);
+void JpegTexture_CheckValidJpeg(GenericBuffer *buf);
 

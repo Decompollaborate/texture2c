@@ -15,8 +15,8 @@ typedef enum TypeBitWidth {
 
 typedef struct GenericBuffer {
     uint8_t* buffer;
-    size_t bufferSize;
-    size_t bufferLength;
+    size_t bufferSize;   // Size of the allocated buffer
+    size_t bufferLength; // Number of elements currently in the buffer
     bool hasData;
     bool isCompressed;
 } GenericBuffer;
