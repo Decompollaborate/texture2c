@@ -452,7 +452,7 @@ int main(int argc, char** argv) {
         PrintVariablePre(gState.outputFile, gState.extraPrefix, gState.CType, gState.varName);
     }
 
-    GenericBuffer_WriteRaw(&genericBuf, gState.bitGroupSize, gState.outputFile);
+    GenericBuffer_WriteAsRawCArray(&genericBuf, gState.bitGroupSize, gState.outputFile);
 
     if (!gState.rawOut) {
         PrintVariablePost(gState.outputFile);
@@ -460,7 +460,7 @@ int main(int argc, char** argv) {
 
     // TODO
     if (paletteBuf.hasData) {
-        GenericBuffer_WriteRaw(&paletteBuf, TypeBitWidth_16, stdout);
+        GenericBuffer_WriteAsRawCArray(&paletteBuf, TypeBitWidth_16, stdout);
     }
 
     GenericBuffer_Destroy(&paletteBuf);

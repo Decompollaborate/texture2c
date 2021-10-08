@@ -24,7 +24,7 @@ void GenericBuffer_Destroy(GenericBuffer* buffer) {
 }
 
 
-void GenericBuffer_WriteRaw(GenericBuffer* buffer, TypeBitWidth bitWidth, FILE* outFile) {
+void GenericBuffer_WriteAsRawCArray(GenericBuffer* buffer, TypeBitWidth bitWidth, FILE* outFile) {
     assert(buffer->hasData);
     assert(bitWidth >= 0 && bitWidth < TypeBitWidth_Max);
 
@@ -91,6 +91,8 @@ void GenericBuffer_WriteRaw(GenericBuffer* buffer, TypeBitWidth bitWidth, FILE* 
         fprintf(outFile, "\n");
     }
 }
+
+
 
 void GenericBuffer_Yaz0Compress(GenericBuffer* buffer) {
     assert(buffer->hasData);
