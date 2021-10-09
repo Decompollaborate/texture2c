@@ -92,6 +92,22 @@ void GenericBuffer_WriteAsRawCArray(GenericBuffer* buffer, TypeBitWidth bitWidth
     }
 }
 
+void GenericBuffer_ReadBinary(GenericBuffer* buffer, FILE* inFile) {
+    assert(!buffer->hasData);
+
+    long startingPoint = ftell(inFile);
+    fseek(inFile, 0, SEEK_END);
+    buffer->bufferSize = ftell(inFile) - startingPoint;
+    fseek(inFile, startingPoint, SEEK_SET);
+
+    buffer->buffer = malloc(buffer->bufferSize * sizeof(uint8_t));
+
+    buffer->bufferLength = fread(buffer->buffer, sizeof(uint8_t), buffer->bufferSize, inFile);
+
+    assert(buffer->bufferLength <= buffer->bufferSize);
+
+    buffer->hasData = true;
+}
 
 
 void GenericBuffer_Yaz0Compress(GenericBuffer* buffer) {

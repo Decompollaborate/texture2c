@@ -18,17 +18,14 @@ void JpegTexture_ReadJpeg(GenericBuffer *dst, FILE* inFile, bool fillBuffer) {
     // TODO?
     assert(!dst->hasData);
 
-    dst->bufferSize = SCREEN_BUFFER_SIZE;
-    dst->buffer = calloc(dst->bufferSize, sizeof(uint8_t));
-    dst->bufferLength = fread(dst->buffer, 1, dst->bufferSize, inFile);
-
-    assert(dst->bufferLength < dst->bufferSize);
+    GenericBuffer_ReadBinary(dst, inFile);
 
     if (fillBuffer) {
+        dst->bufferSize = SCREEN_BUFFER_SIZE;
+        dst->buffer = realloc(dst->buffer, dst->bufferSize);
+        assert(dst->buffer != NULL);
         dst->bufferLength = dst->bufferSize;
     }
-
-    dst->hasData = true;
 }
 
 void JpegTexture_CheckValidJpeg(GenericBuffer *buf) {

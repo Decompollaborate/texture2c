@@ -25,6 +25,7 @@ void GenericBuffer_Init(GenericBuffer* buffer);
 void GenericBuffer_Destroy(GenericBuffer* buffer);
 
 void GenericBuffer_WriteAsRawCArray(GenericBuffer* buffer, TypeBitWidth bitWidth, FILE* outFile);
+void GenericBuffer_ReadBinary(GenericBuffer* buffer, FILE* inFile);
 
 void GenericBuffer_Yaz0Compress(GenericBuffer* buffer);
 void GenericBuffer_Yaz0Decompress(GenericBuffer* buffer);

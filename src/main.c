@@ -288,7 +288,7 @@ int main(int argc, char** argv) {
             /* Flags */
             case 'b':
                 gState.blobMode = true;
-                assert(!"Not implemented");
+                //assert(!"Not implemented");
                 break;
 
             case 'h':
@@ -355,28 +355,32 @@ int main(int argc, char** argv) {
 
     /* Natural types by default */
     if (gState.bitGroupSize == (TypeBitWidth)-1) {
-        switch (gState.pixelFormat) {
-            case TextureType_rgba32:
-                gState.bitGroupSize = TypeBitWidth_32;
-                break;
+        if (gState.blobMode) {
+            gState.bitGroupSize = TypeBitWidth_8;
+        } else {
+            switch (gState.pixelFormat) {
+                case TextureType_rgba32:
+                    gState.bitGroupSize = TypeBitWidth_32;
+                    break;
 
-            case TextureType_rgba16:
-            case TextureType_ia16:
-                gState.bitGroupSize = TypeBitWidth_16;
-                break;
+                case TextureType_rgba16:
+                case TextureType_ia16:
+                    gState.bitGroupSize = TypeBitWidth_16;
+                    break;
 
-            case TextureType_i8:
-            case TextureType_ia8:
-            case TextureType_ci8:
-            case TextureType_i4:
-            case TextureType_ia4:
-            case TextureType_ci4:
-                gState.bitGroupSize = TypeBitWidth_8;
-                break;
+                case TextureType_i8:
+                case TextureType_ia8:
+                case TextureType_ci8:
+                case TextureType_i4:
+                case TextureType_ia4:
+                case TextureType_ci4:
+                    gState.bitGroupSize = TypeBitWidth_8;
+                    break;
 
-            default:
-                printf("error: unknown texture type specified\n");
-                return EXIT_FAILURE;
+                default:
+                    printf("error: unknown texture type specified\n");
+                    return EXIT_FAILURE;
+            }
         }
     }
 
@@ -430,16 +434,20 @@ int main(int argc, char** argv) {
     GenericBuffer paletteBuf;
     GenericBuffer_Init(&paletteBuf);
 
-    switch (gState.inputFileFormat) {
-        default:
-            printf("Assuming PNG...\n");
-        case FORMAT_PNG:
-            ReadPng(&genericBuf, &paletteBuf, gState.inputFile, gState.pixelFormat, gState.extractPalette);
-            break;
+    if (gState.blobMode) {
+        GenericBuffer_ReadBinary(&genericBuf, gState.inputFile);
+    } else {
+        switch (gState.inputFileFormat) {
+            default:
+                printf("Assuming PNG...\n");
+            case FORMAT_PNG:
+                ReadPng(&genericBuf, &paletteBuf, gState.inputFile, gState.pixelFormat, gState.extractPalette);
+                break;
 
-        case FORMAT_JPEG:
-            ReadJpeg(&genericBuf, gState.inputFile);
-            break;
+            case FORMAT_JPEG:
+                ReadJpeg(&genericBuf, gState.inputFile);
+                break;
+        }
     }
 
     if (gState.compress) {
