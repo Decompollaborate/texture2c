@@ -77,7 +77,7 @@ void PrintFlowAndIndent(const char* string, size_t initialColumn, size_t textWid
     }
 }
 
-void PrintHelp(size_t optCount, OptInfo* optInfo) {
+void PrintHelp(size_t optCount, const OptInfo* optInfo) {
     size_t textWidth = 80;
     size_t dtIndent = 2;
     size_t ddIndent = 25;

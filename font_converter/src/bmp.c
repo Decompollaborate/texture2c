@@ -70,6 +70,8 @@ void WriteBMPFile(FILE* outFile, uint8_t* bitArray, size_t width, size_t height)
     fwrite(palette, sizeof(palette), 1, outFile);
 
     fwrite(pixelArray, pixelArrayCount, 1, outFile);
+
+    free(pixelArray);
 }
 
 /* Reading */

@@ -38,6 +38,9 @@
 #include "macros.h"
 #include "mkdir.h"
 
+#include "1bpp_png.h"
+#include "single_image.h"
+
 /* Defines, may replace some with args later */
 
 /* total rows of characters */
@@ -55,12 +58,12 @@
 /* width of character in array elements */
 #define CHARACTER_ROW_SIZE CHARACTER_WIDTH / PIXEL_DENSITY
 
-void ConstructPalettes(int* palettes) {
-    int i;
+void ConstructPalettes(int* palettes, size_t number) {
+    size_t i;
     // paletteArray = malloc(PALETTE_MAX * sizeof(int));
     // Either free this or malloc it elsewhere, or put it on the stack in main if it's going to always be size 4
 
-    for (i = 0; i < PALETTE_MAX; i++) {
+    for (i = 0; i < number; i++) {
         palettes[i] = 0x11 << i;
     }
 }
@@ -78,13 +81,64 @@ uint8_t* SetBitArray(uint8_t* array, uint8_t* fileBuffer, size_t count, int pale
         for (subArrayIndex = 0; subArrayIndex < PIXEL_DENSITY; subArrayIndex++) {
             array[PIXEL_DENSITY * i + subArrayIndex] =
                 ((fileBuffer[i] & paletteMask & (0xF0 >> (4 * subArrayIndex))) != 0);
+            // printf("%d,", array[PIXEL_DENSITY * i + subArrayIndex]);
         }
     }
 
     return array;
 }
 
+/* Construct bit arrays from binary file. Do not forget to free(bitArrays[i]) later! */
+size_t ReadBinaryFile(uint8_t** bitArrays, FILE* inputFile, size_t readStart, size_t readLength) {
+    int i;
+    int palettes[PALETTE_MAX];
+    uint8_t* inFileBuffer;
+    size_t numberRead;
+    size_t endOfFile;
+
+    fseek(inputFile, 0, SEEK_END);
+    endOfFile = ftell(inputFile);
+    if (endOfFile < readStart) {
+        fprintf(stderr, "Starting offset 0x%zX is beyond end of file at 0x%zX\n", readStart, endOfFile);
+    } else if (endOfFile < readStart + readLength) {
+        fprintf(stderr, "Reading 0x%zX bytes starting at 0x%zX will pass end of file at 0x%zX\n", readLength, readStart,
+                endOfFile);
+    }
+
+    /* If read length is not set, read to the end */
+    if (readLength == 0) {
+        readLength = ftell(inputFile) - readStart;
+    }
+
+    fseek(inputFile, readStart, SEEK_SET);
+    // printf("File read start: 0x%zX\n", readStart);
+    // printf("File read length: 0x%zX\n", readLength);
+
+    inFileBuffer = malloc(readLength * sizeof(uint8_t));
+
+    /* Read inputFile. Now finished with input, so close it. */
+    numberRead = fread(inFileBuffer, sizeof(uint8_t), readLength / sizeof(uint8_t), inputFile);
+    if (numberRead < readLength) {
+        fprintf(stderr, "Reached end of file after reading 0x%zX / 0x%zX bytes\n", numberRead, readLength);
+    }
+    fclose(inputFile);
+
+    ConstructPalettes(palettes, PALETTE_MAX);
+
+    /* Construct the bit arrays */
+    for (i = 0; i < PALETTE_MAX; i++) {
+        bitArrays[i] = malloc(PIXEL_DENSITY * readLength * sizeof(uint8_t));
+        SetBitArray(bitArrays[i], inFileBuffer, readLength, palettes[i]);
+    }
+
+    /* Finished with inFileBuffer now */
+    free(inFileBuffer);
+
+    return readLength;
+}
+
 /* For writing a C file */
+
 void WriteDefinitionHead(FILE* file, const char* extraPrefix, const char* cType, const char* varName) {
     assert(file != NULL);
     assert(cType != NULL);
@@ -124,12 +178,19 @@ void WriteDefinitionTail(FILE* file) {
     fputs("\n};", file);
 }
 
+void FreeBitArrays(uint8_t** bitArrays, size_t number) {
+    size_t i;
+    for (i = 0; i < PALETTE_MAX; i++) {
+        free(bitArrays[i]);
+    }
+}
+
 /* Options */
 #define OPTSTR "I:L:O:l:i:o:s:hr"
 #define USAGE_FMT ""
 
 // clang-format off
-static OptInfo optInfo[] = {
+static const OptInfo optInfo[] = {
     { { "input-mode", required_argument, NULL, 'I' }, "TYPE", "type of input file: one of B(inary), (Bit)M(ap images), C( file)" },
     { { "input-list", required_argument, NULL, 'L' }, "LIST", "For conversion of multiple files, pass the path of a list file" },
     { { "output-mode", required_argument, NULL, 'O' }, "TYPE", "type of output file: one of B(inary), (Bit)M(ap images), C( file)" },
@@ -143,6 +204,8 @@ static OptInfo optInfo[] = {
 
     { { NULL, 0, NULL, 0 }, NULL, NULL },
 };
+
+static const PositionalArgument positionalArguments[] = {};
 // clang-format on
 
 static size_t optCount = ARRAY_COUNT(optInfo);
@@ -164,11 +227,9 @@ int main(int argc, char** argv) {
 
     int palettes[PALETTE_MAX];
     FILE* inputFile;
-    size_t fileLength;
     uint8_t* inFileBuffer;
     size_t inFileBufferCount;
     FILE* outputFile;
-    size_t i;
     uint8_t* bitArrays[PALETTE_MAX];
 
     char inputMode = '\0';
@@ -196,7 +257,7 @@ int main(int argc, char** argv) {
         switch (opt) {
             case 'I':
                 sscanf(optarg, "%c%c", &inputMode, &overflow);
-                if (overflow != '\0' || inputMode != 'B' || inputMode != 'M' || inputMode != 'C') {
+                if (overflow != '\0' || (inputMode != 'B' && inputMode != 'M' && inputMode != 'C')) {
                     fprintf(stderr, "error: '%s' is not a valid input mode: should be one of B, M, C", optarg);
                     return EXIT_FAILURE;
                 }
@@ -210,7 +271,7 @@ int main(int argc, char** argv) {
 
             case 'O':
                 sscanf(optarg, "%c%c", &outputMode, &overflow);
-                if (overflow != '\0' || inputMode != 'B' || inputMode != 'M' || inputMode != 'C') {
+                if (overflow != '\0' || (inputMode != 'B' && inputMode != 'M' && inputMode != 'C')) {
                     fprintf(stderr, "error: '%s' is not a valid output mode: should be one of B, M, C", optarg);
                     return EXIT_FAILURE;
                 }
@@ -233,6 +294,7 @@ int main(int argc, char** argv) {
 
             case 'o':
                 printf("Passed argument '-o %s', but output files are not yet enabled.", optarg);
+                outputFile = fopen(optarg, "wb");
                 break;
 
             case 's':
@@ -261,38 +323,46 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    outputFile = stdout;
 
     if (outputFile == NULL) {
-        return EXIT_FAILURE;
+        outputFile = stdout;
+        fprintf(stderr, "No output file given, defaulting to stdout");
+        // return EXIT_FAILURE;
     }
 
     // #if 0
-    /* Construct required variables */
 
-    ConstructPalettes(palettes);
+    // ConstructPalettes(palettes);
 
-    fseek(inputFile, 0, SEEK_END);
-    fileLength = ftell(inputFile);
-    fseek(inputFile, 0, SEEK_SET);
-    // printf("File length: 0x%zX\n", fileLength);
+    // /* If read length is not set, read to the end */
+    // if (readLength == 0) {
+    //     fseek(inputFile, readStart, SEEK_END);
+    //     readLength = ftell(inputFile);
+    //     fseek(inputFile, 0, SEEK_SET);
+    //     // printf("File length: 0x%zX\n", readLength);
+    // }
 
-    inFileBuffer = malloc(fileLength * sizeof(uint8_t));
-    inFileBufferCount = fileLength;
+    // inFileBuffer = malloc(readLength * sizeof(uint8_t));
+    // inFileBufferCount = readLength;
 
-    /* Read inputFile. Now finished with input, so close it. */
-    fread(inFileBuffer, sizeof(uint8_t), fileLength / sizeof(uint8_t), inputFile);
-    fclose(inputFile);
+    // /* Read inputFile. Now finished with input, so close it. */
+    // fread(inFileBuffer, sizeof(uint8_t), readLength / sizeof(uint8_t), inputFile);
+    // fclose(inputFile);
 
-    /* Construct the bit arrays */
-    for (i = 0; i < PALETTE_MAX; i++) {
-        bitArrays[i] = malloc(PIXEL_DENSITY * inFileBufferCount * sizeof(uint8_t));
-        SetBitArray(bitArrays[i], inFileBuffer, inFileBufferCount, palettes[i]);
-    }
+    // /* Construct the bit arrays */
+    // {
+    //     size_t i;
+    //     for (i = 0; i < PALETTE_MAX; i++) {
+    //         bitArrays[i] = malloc(PIXEL_DENSITY * inFileBufferCount * sizeof(uint8_t));
+    //         SetBitArray(bitArrays[i], inFileBuffer, inFileBufferCount, palettes[i]);
+    //     }
+    // }
 
-    /* Finished with inFileBuffer now */
-    free(inFileBuffer);
+    // /* Finished with inFileBuffer now */
+    // free(inFileBuffer);
 
+    readLength = ReadBinaryFile(bitArrays, inputFile, readStart, readLength);
+    printf("Length read: 0x%zX\n", readLength);
     // for (i = 0; i < PALETTE_MAX; i++) {
     //     size_t pixel;
     //     for (pixel = 0; pixel < PIXEL_DENSITY * inFileBufferCount; pixel++) {
@@ -304,8 +374,15 @@ int main(int argc, char** argv) {
     //     printf("\n");
     // }
 
+    // PrintSingleImage(bitArrays, readLength);
+    // WriteSingleImage(outputFile, bitArrays, readLength);
+    WriteSingleBMPImage(outputFile, bitArrays, readLength);
+
+#if 0
+
 #undef ROW_MAX
 #define ROW_MAX 32
+    // needs: outputPath, bitArrays, width, height
     {
         char* outputPath = "test";
         char* outputFileNames[4]; // [30]; // TODO: do not hardcode these, malloc them or something
@@ -318,10 +395,10 @@ int main(int argc, char** argv) {
         outputFileListName = malloc(stringLength * sizeof(char));
         sprintf(outputFileListName, "%s/filelist.txt", outputPath);
 
-        outputFileList = fopen_mkdir(outputFileListName, "wa");
+        outputFileList = fopen_mkdir(outputFileListName, "a");
         free(outputFileListName);
 
-        for (layer = 0; layer < 4; layer++) {
+        for (layer = 0; layer < PALETTE_MAX; layer++) {
             stringLength = snprintf(NULL, 0, "%s/layer_%d.bmp", outputPath, layer) + 1;
             outputFileNames[layer] = malloc(stringLength * sizeof(char));
             sprintf(outputFileNames[layer], "%s/layer_%d.bmp", outputPath, layer);
@@ -341,7 +418,7 @@ int main(int argc, char** argv) {
 
         // printf("\n");
     }
-    // #endif
+#endif
 
 #if 0
 
@@ -440,7 +517,7 @@ int main(int argc, char** argv) {
 
 #if 0
 
-    for (i = 0; i < fileLength / sizeof(uint8_t); i++) {
+    for (i = 0; i < readLength / sizeof(uint8_t); i++) {
         fprintf(outputFile, "%s", (inFileBuffer[i] & 0x10 ? "\x1b[47m \x1b[0m" : " "));
         fprintf(outputFile, "%s", (inFileBuffer[i] & 0x1 ? "\x1b[47m \x1b[0m" : " "));
         if (!((i + 1) & 0x7)) {
@@ -478,9 +555,7 @@ int main(int argc, char** argv) {
         fclose(outputFile);
     }
 
-    for (i = 0; i < PALETTE_MAX; i++) {
-        free(bitArrays[i]);
-    }
+    FreeBitArrays(bitArrays, PALETTE_MAX);
 
     return EXIT_SUCCESS;
 }
