@@ -5,12 +5,10 @@
 
 #include "image_backend.h"
 
-
 void Write1bppPNG(FILE* outputFile, uint8_t* pixelArray, uint32_t width, uint32_t height) {
     ImageBackend image;
 
     ImageBackend_Init(&image);
-    
 
     image.width = width;
     image.height = height;
@@ -40,6 +38,25 @@ void Write1bppPNG(FILE* outputFile, uint8_t* pixelArray, uint32_t width, uint32_
         }
     }
     puts("Set up pixels");
+
+    ImageBackend_WritePng(&image, outputFile);
+    ImageBackend_Destroy(&image);
+}
+
+void WriteGrayscalePNG(FILE* outputFile, uint8_t* pixelArray, uint32_t width, uint32_t height) {
+    ImageBackend image;
+
+    ImageBackend_Init(&image);
+    ImageBackend_InitEmptyRGBImage(&image, width, height, false);
+
+    {
+        size_t currentPixel;
+        for (currentPixel = 0; currentPixel < width * height; currentPixel++) {
+            uint8_t grayscale =  ( (pixelArray[currentPixel] != 0) ? 255 : 0 );
+            uint8_t alpha = grayscale; 
+            ImageBackend_SetGrayscalePixel(&image, currentPixel / width, currentPixel % width, grayscale, alpha);
+        }
+    }
 
     ImageBackend_WritePng(&image, outputFile);
     ImageBackend_Destroy(&image);

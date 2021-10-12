@@ -293,7 +293,7 @@ int main(int argc, char** argv) {
                 break;
 
             case 'o':
-                printf("Passed argument '-o %s', but output files are not yet enabled.", optarg);
+                // printf("Passed argument '-o %s', but output files are not yet enabled.\n", optarg);
                 outputFile = fopen(optarg, "wb");
                 break;
 
@@ -374,9 +374,13 @@ int main(int argc, char** argv) {
     //     printf("\n");
     // }
 
+
+    printf("Printing single image...\n");
     // PrintSingleImage(bitArrays, readLength);
-    // WriteSingleImage(outputFile, bitArrays, readLength);
-    WriteSingleBMPImage(outputFile, bitArrays, readLength);
+    // WriteSingle1bppPNG(outputFile, bitArrays, readLength);
+    // WriteSingleBMPImage(outputFile, bitArrays, readLength);
+    WriteSingleGrayscalePNG(outputFile, bitArrays, readLength);
+    printf("Done\n");
 
 #if 0
 

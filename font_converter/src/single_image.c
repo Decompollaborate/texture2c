@@ -64,15 +64,15 @@ void JoinToSingleArray(uint8_t** joinedArray, uint8_t** bitArrays, size_t arrayC
     {
         size_t row;
         for (row = 0; row < CHARACTER_HEIGHT * ROW_MAX; row++) {
-            if (row % CHARACTER_HEIGHT == 0) {
-                puts("+----------------+----------------+----------------+----------------+----------------+----------------+----------------+----------------+");
-            }
+            // if (row % CHARACTER_HEIGHT == 0) {
+            //     puts("+----------------+----------------+----------------+----------------+----------------+----------------+----------------+----------------+");
+            // }
             size_t charColumn;
             for (charColumn = 0; charColumn < CHARACTERS_PER_ROW; charColumn++) {
                 size_t palette;
                 for (palette = 0; palette < PALETTE_MAX; palette++) {
                     size_t column;
-                    printf("|");
+                    // printf("|");
                     for (column = 0; column < CHARACTER_WIDTH; column++) {
                         size_t currentSingleElement =
                             CHARACTER_WIDTH * (CHARACTERS_PER_ROW * PALETTE_MAX * row + PALETTE_MAX * charColumn + palette) + column;
@@ -81,13 +81,13 @@ void JoinToSingleArray(uint8_t** joinedArray, uint8_t** bitArrays, size_t arrayC
                         (*joinedArray)[currentSingleElement] = bitArrays[palette][currentBitElement];
                         // printf("%s", (bitArrays[palette][currentBitElement] ? "\x1b[30;47m1,\x1b[0m" : "0,"));
                         // printf("%s", (joinedArray[currentSingleElement] ? "\x1b[30;47m1,\x1b[0m" : "0,"));
-                        printf("%s", ((*joinedArray)[currentSingleElement] ? "\x1b[47m  \x1b[0m" : "  "));
+                        // printf("%s", ((*joinedArray)[currentSingleElement] ? "\x1b[47m  \x1b[0m" : "  "));
                     }
                 }
             }
-            puts("|");
+            // puts("|");
         }
-        puts("+----------------+----------------+----------------+----------------+----------------+----------------+----------------+----------------+");
+        // puts("+----------------+----------------+----------------+----------------+----------------+----------------+----------------+----------------+");
     }
 
     // {
@@ -112,7 +112,7 @@ void PrintSingleImage(uint8_t** bitArrays, size_t arrayCount) {
     free(joinedArray);
 }
 
-void WriteSingleImage(FILE* outputFile, uint8_t** bitArrays, size_t arrayCount) {
+void WriteSingle1bppPNG(FILE* outputFile, uint8_t** bitArrays, size_t arrayCount) {
     uint8_t* joinedArray = NULL;
 
     JoinToSingleArray(&joinedArray, bitArrays, arrayCount);
@@ -128,6 +128,16 @@ void WriteSingleBMPImage(FILE* outputFile, uint8_t** bitArrays, size_t arrayCoun
     JoinToSingleArray(&joinedArray, bitArrays, arrayCount);
 
     WriteBMPFile(outputFile, joinedArray, PALETTE_MAX * CHARACTERS_PER_ROW * CHARACTER_WIDTH, CHARACTER_HEIGHT * ROW_MAX);
+
+    free(joinedArray);
+}
+
+void WriteSingleGrayscalePNG(FILE* outputFile, uint8_t** bitArrays, size_t arrayCount) {
+    uint8_t* joinedArray = NULL;
+
+    JoinToSingleArray(&joinedArray, bitArrays, arrayCount);
+
+    WriteGrayscalePNG(outputFile, joinedArray, PALETTE_MAX * CHARACTERS_PER_ROW * CHARACTER_WIDTH, CHARACTER_HEIGHT * ROW_MAX);
 
     free(joinedArray);
 }
