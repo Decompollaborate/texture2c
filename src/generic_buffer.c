@@ -27,6 +27,7 @@ void GenericBuffer_Destroy(GenericBuffer* buffer) {
 void GenericBuffer_WriteAsRawCArray(GenericBuffer* buffer, TypeBitWidth bitWidth, FILE* outFile) {
     assert(buffer->hasData);
     assert(bitWidth >= 0 && bitWidth < TypeBitWidth_Max);
+    assert(outFile != NULL)
 
     size_t step = 8;
     size_t elementsPerLine = 4;

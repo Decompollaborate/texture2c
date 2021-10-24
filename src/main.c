@@ -37,15 +37,16 @@ typedef struct {
     char* extraPrefix;
     char* CType;
     char* varName;
+    bool extractPalette;
+    FILE* paletteFile;
 
     bool blobMode;
-    bool extractPalette;
     bool rawOut;
     bool compress;
 } State;
 
 State gState = {
-    NULL, NULL, -1, TextureType_rgba16, -1, NULL, NULL, NULL, false, false, false, false,
+    NULL, NULL, -1, TextureType_rgba16, -1, NULL, NULL, NULL, false, NULL, false, false, false,
 };
 
 void GuessInputFileFormat() {
@@ -160,10 +161,10 @@ static OptInfo optInfo[] = {
     { { "output-path", required_argument, NULL, 'o' }, "FILE", "Write output to FILE, or stdout if not specified" },
     { { "bit-group-size", required_argument, NULL, 'u' }, "SIZE", "Number of bits in each array element of output. One of 8,16,32,64. Default is inferred from -p, 32 for rgba32, 16 for rgba16/ia16, 8 for the rest" },
     { { "var-name", required_argument, NULL, 'v' }, "NAME", "Use NAME as variable name of C array. Default: inputFileTex" },
+    { { "palette", required_argument, NULL, 'l' }, "FILE", "Extract the palette a PNG uses instead of the image to FILE" },
 
     { { "help", no_argument, NULL, 'h' }, NULL, "Display this message and exit" },
     { { "blob", no_argument, NULL, 'b' }, NULL, "Treat file as a binary blob rather than a texture" },
-    { { "palette", no_argument, NULL, 'l' }, NULL, "Extract the palette a PNG uses instead of the image" },
     { { "raw", no_argument, NULL, 'r' }, NULL, "Output a raw array, i.e. only the contents of the {}. Ignores -c, -e, -v" },
     { { "yaz0", no_argument, NULL, 'y' }, NULL, "Compress the output using yaz0" },
     { { NULL, 0, NULL, 0 }, NULL, NULL },
@@ -201,14 +202,12 @@ void PrintVariablePost(FILE* outFile) {
 }
 
 void CheckValidProgramArguments() {
-
     if (!gState.rawOut) {
         if (gState.varName == NULL) {
             fprintf(stderr, "Error: Missing var-name\n");
             exit(EXIT_FAILURE);
         }
     }
-
 
     if (gState.extractPalette) {
         switch (gState.pixelFormat) {
@@ -285,6 +284,12 @@ int main(int argc, char** argv) {
                 gState.varName = optarg;
                 break;
 
+            case 'l':
+                printf("Extracting palette from PNG: %s\n", optarg);
+                gState.extractPalette = true;
+                gState.paletteFile = fopen(optarg, "w");
+                break;
+
             /* Flags */
             case 'b':
                 gState.blobMode = true;
@@ -294,11 +299,6 @@ int main(int argc, char** argv) {
             case 'h':
                 PrintHelp(optCount, optInfo);
                 return EXIT_FAILURE;
-
-            case 'l':
-                printf("Extracting palette from PNG...\n");
-                gState.extractPalette = true;
-                break;
 
             case 'r':
                 printf("Raw mode selected.\n");
@@ -466,9 +466,8 @@ int main(int argc, char** argv) {
         PrintVariablePost(gState.outputFile);
     }
 
-    // TODO
     if (paletteBuf.hasData) {
-        GenericBuffer_WriteAsRawCArray(&paletteBuf, TypeBitWidth_16, stdout);
+        GenericBuffer_WriteAsRawCArray(&paletteBuf, TypeBitWidth_16, gState.paletteFile);
     }
 
     GenericBuffer_Destroy(&paletteBuf);
@@ -479,6 +478,9 @@ int main(int argc, char** argv) {
     }
     if (gState.outputFile != stdout) {
         fclose(gState.outputFile);
+    }
+    if (gState.paletteFile != NULL) {
+        fclose(gState.paletteFile);
     }
 
     return EXIT_SUCCESS;
