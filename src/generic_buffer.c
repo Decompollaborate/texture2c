@@ -8,7 +8,6 @@
 #include "yaz0/yaz0.h"
 #include "macros.h"
 
-
 void GenericBuffer_Init(GenericBuffer* buffer) {
     buffer->buffer = NULL;
     buffer->bufferSize = 0;
@@ -23,11 +22,10 @@ void GenericBuffer_Destroy(GenericBuffer* buffer) {
     }
 }
 
-
 void GenericBuffer_WriteAsRawCArray(GenericBuffer* buffer, TypeBitWidth bitWidth, FILE* outFile) {
     assert(buffer->hasData);
     assert(bitWidth >= 0 && bitWidth < TypeBitWidth_Max);
-    assert(outFile != NULL)
+    assert(outFile != NULL);
 
     size_t step = 8;
     size_t elementsPerLine = 4;
@@ -109,7 +107,6 @@ void GenericBuffer_ReadBinary(GenericBuffer* buffer, FILE* inFile) {
 
     buffer->hasData = true;
 }
-
 
 void GenericBuffer_Yaz0Compress(GenericBuffer* buffer) {
     assert(buffer->hasData);

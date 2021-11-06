@@ -21,7 +21,7 @@ typedef enum TextureType {
     TextureType_Max,
 } TextureType;
 
-void PngTexture_CopyPng(GenericBuffer *dst, const ImageBackend *textureData, TextureType texType);
-void PngTexture_CopyPalette(GenericBuffer *dst, const ImageBackend *textureData);
+void PngTexture_CopyPng(GenericBuffer* dst, const ImageBackend* textureData, TextureType texType);
+void PngTexture_CopyPalette(GenericBuffer* dst, const ImageBackend* textureData);
 
 uint32_t PngTexture_BitsPerPixel(TextureType texType);

@@ -7,7 +7,6 @@
 
 #include "generic_buffer.h"
 
-void JpegTexture_ReadJpeg(GenericBuffer *dst, FILE* inFile, bool fillBuffer);
+void JpegTexture_ReadJpeg(GenericBuffer* dst, FILE* inFile, bool fillBuffer);
 
-void JpegTexture_CheckValidJpeg(GenericBuffer *buf);
-
+void JpegTexture_CheckValidJpeg(GenericBuffer* buf);

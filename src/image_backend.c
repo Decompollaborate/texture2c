@@ -463,7 +463,7 @@ bool ImageBackend_ConvertToColorIndexed(ImageBackend* image) {
             }
 
             if (!wasColorPreviouslyAdded) {
-                if (paletteMax >= ARRAY_COUNT(image->colorPalette)){
+                if (paletteMax >= ARRAY_COUNT(image->colorPalette)) {
                     return false;
                 }
 
@@ -496,10 +496,10 @@ bool ImageBackend_ConvertToColorIndexed(ImageBackend* image) {
 
                 if (tempPixel->r == pixel.r && tempPixel->g == pixel.g && tempPixel->b == pixel.b) {
                     if (image->alphaPalette[i] == pixel.a) {
-                        //image->pixelMatrix[y][x * bytePerPixel + 0] = i;
-                        //image->pixelMatrix[y][x * bytePerPixel + 1] = i;
-                        //image->pixelMatrix[y][x * bytePerPixel + 2] = i;
-                        //if (image->colorType == PNG_COLOR_TYPE_RGBA) {
+                        // image->pixelMatrix[y][x * bytePerPixel + 0] = i;
+                        // image->pixelMatrix[y][x * bytePerPixel + 1] = i;
+                        // image->pixelMatrix[y][x * bytePerPixel + 2] = i;
+                        // if (image->colorType == PNG_COLOR_TYPE_RGBA) {
                         //    image->pixelMatrix[y][x * bytePerPixel + 3] = i;
                         //}
                         image->pixelMatrix[y][x] = i;

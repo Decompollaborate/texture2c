@@ -11,8 +11,7 @@
 #define JPEG_MARKER 0xFFD8FFE0
 #define MARKER_DQT 0xFFDB
 
-
-void JpegTexture_ReadJpeg(GenericBuffer *dst, FILE* inFile, bool fillBuffer) {
+void JpegTexture_ReadJpeg(GenericBuffer* dst, FILE* inFile, bool fillBuffer) {
     assert(dst != NULL);
     assert(inFile != NULL);
     // TODO?
@@ -28,13 +27,12 @@ void JpegTexture_ReadJpeg(GenericBuffer *dst, FILE* inFile, bool fillBuffer) {
     }
 }
 
-void JpegTexture_CheckValidJpeg(GenericBuffer *buf) {
+void JpegTexture_CheckValidJpeg(GenericBuffer* buf) {
     uint32_t jpegMarker = ToUInt32BE(buf->buffer, 0);
 
     if (jpegMarker != JPEG_MARKER) {
-        fprintf(stderr,
-                "Warning: Missing jpeg marker at the beginning of file\n"
-                "\t The game will skip this jpeg.\n");
+        fprintf(stderr, "Warning: Missing jpeg marker at the beginning of file\n"
+                        "\t The game will skip this jpeg.\n");
     }
 
     if (buf->buffer[6] != 'J' || buf->buffer[7] != 'F' || buf->buffer[8] != 'I' || buf->buffer[9] != 'F' ||
@@ -52,19 +50,17 @@ void JpegTexture_CheckValidJpeg(GenericBuffer *buf) {
         fprintf(stderr,
                 "Warning: Wrong JFIF version '%i.%02i'.\n"
                 "\t The expected version is '1.01'. The game may not be able to decode this image "
-                "properly.\n", majorVersion, minorVersion);
+                "properly.\n",
+                majorVersion, minorVersion);
     }
 
-    if (ToUInt16BE(buf->buffer, 20) != MARKER_DQT)
-    {
+    if (ToUInt16BE(buf->buffer, 20) != MARKER_DQT) {
         // This may happen when creating a custom image with Exif, XMP, thumbnail, progressive, etc.
         // enabled.
-        fprintf(stderr,
-                "Warning: There seems to be extra data before the image data.\n"
-                "\t The game may not be able to decode this image properly.\n");
+        fprintf(stderr, "Warning: There seems to be extra data before the image data.\n"
+                        "\t The game may not be able to decode this image properly.\n");
     }
-    if (buf->bufferLength > SCREEN_BUFFER_SIZE)
-    {
+    if (buf->bufferLength > SCREEN_BUFFER_SIZE) {
         fprintf(stderr,
                 "Warning: The image is bigger than the screen buffer.\n"
                 "\t Image size: %zu bytes.\n"

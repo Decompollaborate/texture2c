@@ -38,6 +38,6 @@ typedef struct {
     char* description;
 } DiagnosticInfo;
 
-    // void DiagnosticHandler_Init(const char** warningList) {
-    // 
-    // }
+// void DiagnosticHandler_Init(const char** warningList) {
+//
+// }

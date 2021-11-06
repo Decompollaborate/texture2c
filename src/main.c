@@ -58,9 +58,11 @@ typedef struct {
 } PoorMansDict;
 
 PoorMansDict textureTypeDict[] = {
-    { "rgba16", TextureType_rgba16 }, { "rgba32", TextureType_rgba32 }, { "i4", TextureType_i4 },
-    { "i8", TextureType_i8 },         { "ia4", TextureType_ia4 },       { "ia8", TextureType_ia8 },
-    { "ia16", TextureType_ia16 },     { "ci4", TextureType_ci4 },       { "ci8", TextureType_ci8 }, { NULL, -1 }
+    { "rgba16", TextureType_rgba16 }, { "rgba32", TextureType_rgba32 },
+    { "i4", TextureType_i4 },         { "i8", TextureType_i8 },
+    { "ia4", TextureType_ia4 },       { "ia8", TextureType_ia8 },
+    { "ia16", TextureType_ia16 },     { "ci4", TextureType_ci4 },
+    { "ci8", TextureType_ci8 },       { NULL, -1 },
 };
 
 PoorMansDict bitGroupSizeDict[] = {
@@ -89,7 +91,7 @@ char* BadDictReverseLookup(char* dest, int eNum, const PoorMansDict* dict) {
     for (i = 0; dict[i].eNum != -1; i++) {
         if (dict[i].eNum == eNum) {
             // if (ARRAY_COUNT(dest) > strlen(dict[i].string)) {
-                return strcpy(dest, dict[i].string);
+            return strcpy(dest, dict[i].string);
             // } else {
             //     printf("error: value found, but destination string is too short to copy into");
             //     return NULL;
@@ -110,7 +112,7 @@ void ReadPng(GenericBuffer* buf, GenericBuffer* paletteBuf, FILE* inFile, Textur
         assert(texType == TextureType_ci8 || texType == TextureType_ci4);
 
         if (!textureData.isColorIndexed) {
-            //printf("converting!\n");
+            // printf("converting!\n");
             bool converted = ImageBackend_ConvertToColorIndexed(&textureData);
             if (!converted) {
                 fprintf(stderr, "Error: Could not convert texture to color indexed format.\n");
@@ -123,14 +125,16 @@ void ReadPng(GenericBuffer* buf, GenericBuffer* paletteBuf, FILE* inFile, Textur
         switch (texType) {
             case TextureType_ci8:
                 if (paletteBuf->bufferLength > 256) {
-                    fprintf(stderr, "Error: Palette too big, can't fit on CI8 (256 colors). Palette size: %zu.\n", paletteBuf->bufferLength);
+                    fprintf(stderr, "Error: Palette too big, can't fit on CI8 (256 colors). Palette size: %zu.\n",
+                            paletteBuf->bufferLength);
                     exit(EXIT_FAILURE);
                 }
                 break;
 
             case TextureType_ci4:
                 if (paletteBuf->bufferLength > 16) {
-                    fprintf(stderr, "Error: Palette too big, can't fit on CI4 (16 colors). Palette size: %zu.\n", paletteBuf->bufferLength);
+                    fprintf(stderr, "Error: Palette too big, can't fit on CI4 (16 colors). Palette size: %zu.\n",
+                            paletteBuf->bufferLength);
                     exit(EXIT_FAILURE);
                 }
                 break;
@@ -258,8 +262,8 @@ int main(int argc, char** argv) {
                 printf("Input format: %s\n", optarg);
                 if ((strcmp(optarg, "png") == 0) || (strcmp(optarg, "PNG") == 0)) {
                     gState.inputFileFormat = FORMAT_PNG;
-                } else if ((strcmp(optarg, "jpg") == 0) || (strcmp(optarg, "JPG") == 0) || (strcmp(optarg, "jpeg") == 0) ||
-                           (strcmp(optarg, "JPEG") == 0)) {
+                } else if ((strcmp(optarg, "jpg") == 0) || (strcmp(optarg, "JPG") == 0) ||
+                           (strcmp(optarg, "jpeg") == 0) || (strcmp(optarg, "JPEG") == 0)) {
                     gState.inputFileFormat = FORMAT_JPEG;
                 }
                 break;
@@ -293,7 +297,7 @@ int main(int argc, char** argv) {
             /* Flags */
             case 'b':
                 gState.blobMode = true;
-                //assert(!"Not implemented");
+                // assert(!"Not implemented");
                 break;
 
             case 'h':
@@ -397,7 +401,8 @@ int main(int argc, char** argv) {
         }
 
         if (size != 0) {
-            printf("warning: c-type '%s' does not match bit-group-size %d\n", gState.CType, 1 << ( gState.bitGroupSize + 3 ));
+            printf("warning: c-type '%s' does not match bit-group-size %d\n", gState.CType,
+                   1 << (gState.bitGroupSize + 3));
         }
     } else {
         /* Set default C type */

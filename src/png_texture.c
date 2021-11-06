@@ -7,7 +7,7 @@
 #include "bit_convert.h"
 #include "yaz0/yaz0.h"
 
-void PngTexture_CopyRgba16(GenericBuffer *dst, const ImageBackend *textureData) {
+void PngTexture_CopyRgba16(GenericBuffer* dst, const ImageBackend* textureData) {
     size_t width = textureData->width;
     size_t height = textureData->height;
 
@@ -30,7 +30,7 @@ void PngTexture_CopyRgba16(GenericBuffer *dst, const ImageBackend *textureData) 
     }
 }
 
-void PngTexture_CopyRgba32(GenericBuffer *dst, const ImageBackend *textureData) {
+void PngTexture_CopyRgba32(GenericBuffer* dst, const ImageBackend* textureData) {
     size_t width = textureData->width;
     size_t height = textureData->height;
 
@@ -47,7 +47,7 @@ void PngTexture_CopyRgba32(GenericBuffer *dst, const ImageBackend *textureData) 
     }
 }
 
-void PngTexture_CopyI4(GenericBuffer *dst, const ImageBackend *textureData) {
+void PngTexture_CopyI4(GenericBuffer* dst, const ImageBackend* textureData) {
     size_t width = textureData->width;
     size_t height = textureData->height;
 
@@ -62,7 +62,7 @@ void PngTexture_CopyI4(GenericBuffer *dst, const ImageBackend *textureData) {
     }
 }
 
-void PngTexture_CopyI8(GenericBuffer *dst, const ImageBackend *textureData) {
+void PngTexture_CopyI8(GenericBuffer* dst, const ImageBackend* textureData) {
     size_t width = textureData->width;
     size_t height = textureData->height;
 
@@ -75,7 +75,7 @@ void PngTexture_CopyI8(GenericBuffer *dst, const ImageBackend *textureData) {
     }
 }
 
-void PngTexture_CopyIA4(GenericBuffer *dst, const ImageBackend *textureData) {
+void PngTexture_CopyIA4(GenericBuffer* dst, const ImageBackend* textureData) {
     size_t width = textureData->width;
     size_t height = textureData->height;
 
@@ -100,7 +100,7 @@ void PngTexture_CopyIA4(GenericBuffer *dst, const ImageBackend *textureData) {
     }
 }
 
-void PngTexture_CopyIA8(GenericBuffer *dst, const ImageBackend *textureData) {
+void PngTexture_CopyIA8(GenericBuffer* dst, const ImageBackend* textureData) {
     size_t width = textureData->width;
     size_t height = textureData->height;
 
@@ -117,7 +117,7 @@ void PngTexture_CopyIA8(GenericBuffer *dst, const ImageBackend *textureData) {
     }
 }
 
-void PngTexture_CopyIA16(GenericBuffer *dst, const ImageBackend *textureData) {
+void PngTexture_CopyIA16(GenericBuffer* dst, const ImageBackend* textureData) {
     size_t width = textureData->width;
     size_t height = textureData->height;
 
@@ -135,7 +135,7 @@ void PngTexture_CopyIA16(GenericBuffer *dst, const ImageBackend *textureData) {
     }
 }
 
-void PngTexture_CopyCI4(GenericBuffer *dst, const ImageBackend *textureData) {
+void PngTexture_CopyCI4(GenericBuffer* dst, const ImageBackend* textureData) {
     size_t width = textureData->width;
     size_t height = textureData->height;
 
@@ -151,7 +151,7 @@ void PngTexture_CopyCI4(GenericBuffer *dst, const ImageBackend *textureData) {
     }
 }
 
-void PngTexture_CopyCI8(GenericBuffer *dst, const ImageBackend *textureData) {
+void PngTexture_CopyCI8(GenericBuffer* dst, const ImageBackend* textureData) {
     size_t width = textureData->width;
     size_t height = textureData->height;
 
@@ -165,7 +165,7 @@ void PngTexture_CopyCI8(GenericBuffer *dst, const ImageBackend *textureData) {
     }
 }
 
-typedef void (*CopyPngCallbacks)(GenericBuffer *dst, const ImageBackend *textureData);
+typedef void (*CopyPngCallbacks)(GenericBuffer* dst, const ImageBackend* textureData);
 
 CopyPngCallbacks readPngArray[TextureType_Max] = {
     [TextureType_rgba16] = PngTexture_CopyRgba16, [TextureType_rgba32] = PngTexture_CopyRgba32,
@@ -175,8 +175,7 @@ CopyPngCallbacks readPngArray[TextureType_Max] = {
     [TextureType_ci8] = PngTexture_CopyCI8,
 };
 
-
-void PngTexture_CopyPng(GenericBuffer *dst, const ImageBackend *textureData, TextureType texType) {
+void PngTexture_CopyPng(GenericBuffer* dst, const ImageBackend* textureData, TextureType texType) {
     assert(dst != NULL);
     assert(textureData != NULL);
     assert(texType >= 0 && texType < TextureType_Max);
@@ -192,7 +191,7 @@ void PngTexture_CopyPng(GenericBuffer *dst, const ImageBackend *textureData, Tex
     dst->hasData = true;
 }
 
-void PngTexture_CopyPalette(GenericBuffer *dst, const ImageBackend *textureData) {
+void PngTexture_CopyPalette(GenericBuffer* dst, const ImageBackend* textureData) {
     assert(dst != NULL);
     assert(textureData != NULL);
     // TODO?
@@ -201,8 +200,6 @@ void PngTexture_CopyPalette(GenericBuffer *dst, const ImageBackend *textureData)
     dst->bufferSize = textureData->paletteLen * 2;
     dst->bufferLength = dst->bufferSize;
     dst->buffer = calloc(dst->bufferSize, sizeof(uint8_t));
-
-
 
     size_t paletteLen = textureData->paletteLen;
 
@@ -221,7 +218,6 @@ void PngTexture_CopyPalette(GenericBuffer *dst, const ImageBackend *textureData)
         dst->buffer[pos + 0] = (data & 0xFF00) >> 8;
         dst->buffer[pos + 1] = (data & 0x00FF);
     }
-
 
     dst->hasData = true;
 }
