@@ -34,30 +34,25 @@ void WriteI4PNG(FILE* outputFile, uint8_t* pixelArray, uint32_t width, uint32_t 
     image.bitDepth = 4;
     image.hasImageData = true;
     image.isColorIndexed = false;
-    puts("Set up image struct");
+    // puts("Set up image struct");
     {
         size_t row;
         for (row = 0; row < height; row++) {
             size_t column;
-            // printf("start row %zd\n", row);
             for (column = 0; column < width; column++) {
-                // printf("%02X ",
-                //        pixelArray[width * row + column] << ((8 / PIXELS_PER_BYTE) - (column & (1))));
-                image.pixelMatrix[row][column / PIXELS_PER_BYTE] |=
-                    pixelArray[width * row + column] << ((8 / PIXELS_PER_BYTE) - 4 * (column & (1)));
+                image.pixelMatrix[row][column / PIXELS_PER_BYTE] |= pixelArray[width * row + column]
+                                                                    << ((8 / PIXELS_PER_BYTE) - 4 * (column & 1));
             }
-            puts("");
-            // printf("row %zd done\n", row);
         }
-        for (row = 0; row < height; row++) {
-            size_t column;
-            // printf("start row %zd\n", row);
-            for (column = 0; column < width / 2; column++) {
-                printf("%02X", image.pixelMatrix[row][column]);
-            }
-            puts("");
-            // printf("row %zd done\n", row);
-        }
+        // for (row = 0; row < height; row++) {
+        //     size_t column;
+        //     // printf("start row %zd\n", row);
+        //     for (column = 0; column < width / 2; column++) {
+        //         printf("%02X", image.pixelMatrix[row][column]);
+        //     }
+        //     puts("");
+        //     // printf("row %zd done\n", row);
+        // }
     }
     // puts("Set up pixels");
 
@@ -73,7 +68,7 @@ typedef struct {
 } ByteBuffer;
 
 ByteBuffer* Buffer_Create(ByteBuffer* buffer, size_t length) {
-    buffer->bytes = malloc(length);
+    buffer->bytes = calloc(length, sizeof(uint8_t));
     buffer->length = length;
     return buffer;
 }
@@ -110,7 +105,7 @@ int main(int argc, char** argv) {
     // FILE* outFile = fopen("crash_screen_font.png", "wb");
     size_t inFileSize;
     ByteBuffer inData;
-    ByteBuffer bitArray;
+    ByteBuffer pixelArray;
     size_t pixelsPerByte = 2;
 
     // inFile = fopen("crash_screen_font.bin", "rb");
@@ -125,52 +120,88 @@ int main(int argc, char** argv) {
 
     fclose(inFile);
 
-    Buffer_Create(&bitArray, inFileSize * pixelsPerByte);
+    Buffer_Create(&pixelArray, inFileSize * pixelsPerByte);
 
     {
         size_t i;
         for (i = 0; i < inData.length; i++) {
-            I4_UnpackByte(&bitArray.bytes[i * pixelsPerByte], inData.bytes[i]);
+            I4_UnpackByte(&pixelArray.bytes[i * pixelsPerByte], inData.bytes[i]);
         }
     }
     Buffer_Free(&inData);
 
     {
-        size_t charWidth = 16;
-        size_t charHeight = 16;
+        size_t glyphhWidth = 16;
+        size_t glyphHeight = 16;
         size_t imageWidth = 16;
         size_t imageHeight = inFileSize / imageWidth * pixelsPerByte;
 
-        size_t charsPerRow = imageWidth / charWidth;
-        size_t charRows = imageHeight / charHeight;
+        size_t glyphsPerRow = imageWidth / glyphhWidth;
+        size_t glyphsRows = (imageHeight + glyphHeight - 1) / glyphHeight;
 
-        // size_t charNum = 35;
+        // size_t glyphNum = 35;
 
         FILE* outFile;
 
         /* override for testing */
-        imageHeight = 256;
+        // imageHeight = 256;
+        // imageHeight = 512;
 
-        outFile = fopen("test_i4.png", "wb");
+        {
+            size_t glyphsAcross = 16;
+            size_t glyphPixelCount = glyphhWidth * glyphHeight;
+            size_t imagePixelCount = imageWidth * imageHeight;
+            size_t outWidth = glyphsAcross * glyphhWidth;
+            size_t glyphCount = imagePixelCount / glyphPixelCount;
+            size_t outHeight = ((glyphCount + glyphsAcross - 1) / glyphsAcross) * glyphHeight;
 
-        WriteI4PNG(outFile, bitArray.bytes, imageWidth, imageHeight);
+
+            ByteBuffer rearrangedBuffer;
+            Buffer_Create(&rearrangedBuffer, outWidth * outHeight * pixelsPerByte);
+
+            {
+                size_t glyphNum;
+                for (glyphNum = 0; glyphNum < imagePixelCount / glyphPixelCount; glyphNum++) {
+                    size_t topLeftGridX = (glyphNum % glyphsAcross);
+                    size_t topLeftGridY = (glyphNum / glyphsAcross);
+                    size_t topLeftArrayPos = topLeftGridY * glyphPixelCount * glyphsAcross + topLeftGridX * glyphhWidth;
+                    size_t inGlyph;
+
+                    // printf("%3zu, %3zu, %3zu, %4zu\n", glyphNum, topLeftGridX, topLeftGridY, topLeftArrayPos);
+
+                    for (inGlyph = 0; inGlyph < glyphPixelCount; inGlyph++) {
+                        size_t inGlyphX = inGlyph % glyphhWidth;
+                        size_t inGlyphY = inGlyph / glyphhWidth;
+                        size_t outIndex = topLeftArrayPos + inGlyphY * outWidth + inGlyphX;
+
+                        rearrangedBuffer.bytes[outIndex] = pixelArray.bytes[ glyphNum * glyphPixelCount + inGlyph ];
+                    }
+                }
+            }
+
+            outFile = fopen("kanji_16_across.png", "wb");
+
+            WriteI4PNG(outFile, rearrangedBuffer.bytes, outWidth, outHeight);
+
+            Buffer_Free(&rearrangedBuffer);
+        }
 
         fclose(outFile);
 
         // {
         //     size_t i;
         //     for (i = 0; i < imageHeight * imageWidth; i++) {
-        //         printf("%X", bitArray.bytes[i]);
+        //         printf("%X", pixelArray.bytes[i]);
         //         if ((i + 1) % imageWidth == 0) {
         //             printf("\n");
         //         }
         //     }
-            
-        // }
-        // for (charNum = 0; charNum < charRows * charsPerRow; charNum++) {
 
-        //     size_t charPos[2] = { charNum % charsPerRow, charNum / charsPerRow };
-        //     size_t charStart = charPos[0] * charWidth + charPos[1] * imageWidth * charHeight;
+        // }
+        // for (glyphNum = 0; glyphNum < glyphsRows * glyphsPerRow; glyphNum++) {
+
+        //     size_t charPos[2] = { glyphNum % glyphsPerRow, glyphNum / glyphsPerRow };
+        //     size_t charStart = charPos[0] * glyphhWidth + charPos[1] * imageWidth * glyphHeight;
 
         //     printf("%X, %X, %X\n", charPos[0], charPos[1], charStart);
 
@@ -179,15 +210,15 @@ int main(int argc, char** argv) {
         //         size_t index = charStart;
         //         printf("+------------+\n");
         //         printf("|");
-        //         for (i = 0; i < charWidth * charHeight; i++, index++) {
+        //         for (i = 0; i < glyphhWidth * glyphHeight; i++, index++) {
 
-        //             printf("%s", bitArray.bytes[index] ? "\x1b[47m  \x1b[0m" : "  ");
-        //             if (((i + 1) % charWidth) == 0) {
+        //             printf("%s", pixelArray.bytes[index] ? "\x1b[47m  \x1b[0m" : "  ");
+        //             if (((i + 1) % glyphhWidth) == 0) {
         //                 printf("|\n");
-        //                 if (((i + 1) % (charWidth * charHeight)) != 0) {
+        //                 if (((i + 1) % (glyphhWidth * glyphHeight)) != 0) {
         //                     printf("|");
         //                 }
-        //                 index += imageWidth - charWidth;
+        //                 index += imageWidth - glyphhWidth;
         //             }
         //         }
         //         printf("+------------+\n");
@@ -201,16 +232,16 @@ int main(int argc, char** argv) {
     //     for (i = 0; i < 32; i++) {
     //         printf("%2d", i);
     //     }
-    //     for (i = 0; i < bitArray.length; i++) {
+    //     for (i = 0; i < pixelArray.length; i++) {
     //         if ((i & 0x1F) == 0) {
     //             putchar('\n');
     //             printf("%2d ", i / 0x20);
     //         }
-    //         printf("%s", bitArray.bytes[i] ? "\x1b[47m  \x1b[0m" : "  ");
+    //         printf("%s", pixelArray.bytes[i] ? "\x1b[47m  \x1b[0m" : "  ");
     //     }
     //     putchar('\n');
     // }
-    Buffer_Free(&bitArray);
+    Buffer_Free(&pixelArray);
 
     return 0;
 }
