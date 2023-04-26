@@ -361,7 +361,9 @@ int main(int argc, char** argv) {
         fprintf(stderr, "Mandatory argument 'input-file' missing\n");
         return EXIT_FAILURE;
     } else {
-        printf("Using input file: %s\n", argv[optind]);
+        if (gState.verbose) {
+            printf("Using input file: %s\n", argv[optind]);
+        }
         gState.inputFile = fopen(argv[optind], "rb"); // What if it doesn't exist?
     }
 
